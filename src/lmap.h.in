@@ -1,0 +1,463 @@
+/*
+ * This file is part of lmapd.
+ *
+ * lmapd is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * lmapd is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lmapd. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef LMAP_H
+#define LMAP_H
+
+#include <unistd.h>
+#include <stdint.h>
+#include <time.h>
+
+#define LMAP_VERSION_MAJOR	@lmapd_VERSION_MAJOR@
+#define LMAP_VERSION_MINOR	@lmapd_VERSION_MINOR@
+
+/**
+ * A struct lmap is used to hold all config and state information
+ * about an lmap measurement agent. It essentially serves as a
+ * container for all information related to a single instance of an
+ * lmap agent.
+ */
+
+struct lmap {
+    struct agent     *agent;
+    struct schedule  *schedules;
+    struct supp      *supps;
+    struct event     *events;
+    struct task      *tasks;
+    struct result    *results;
+};
+
+extern struct lmap * lmap_new();
+extern void lmap_free(struct lmap *lmap);
+extern int lmap_valid(struct lmap *lmap);
+extern int lmap_add_schedule(struct lmap *lmap, struct schedule *schedule);
+extern int lmap_add_supp(struct lmap *lmap, struct supp *supp);
+extern int lmap_add_task(struct lmap *lmap, struct task *task);
+extern int lmap_add_event(struct lmap *lmap, struct event *event);
+extern int lmap_add_result(struct lmap *lmap, struct result *res);
+
+extern struct event * lmap_find_event(struct lmap *lmap, const char *name);
+extern struct task * lmap_find_task(struct lmap *lmap, const char *name);
+extern struct schedule * lmap_find_schedule(struct lmap *lmap, const char *name);
+
+/**
+ * A struct agent is used to hold all config and state information
+ * affecting the whole lmap agent. This is mostly covering information
+ * from the ma-config-obj of the LMAP information model.
+ */
+
+struct agent {
+    char *agent_id;
+    char *device_id;
+    char *group_id;
+    char *measurement_point;
+    int report_agent_id;
+    int report_measurement_point;
+    uint32_t controller_timeout;	/* seconds */
+    uint32_t flags;			/* see below */
+
+    char *hardware;
+    char *firmware;
+    char *version;
+    time_t last_started;
+};
+
+#define LMAP_AGENT_FLAG_REPORT_AGENT_ID_SET		0x01
+#define LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET	0x02
+#define LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET		0x04
+
+extern struct agent * lmap_agent_new();
+extern void lmap_agent_free(struct agent *agent);
+extern int lmap_agent_valid(struct lmap *lmap, struct agent *agent);
+extern int lmap_agent_set_agent_id(struct agent *agent, const char *value);
+extern int lmap_agent_set_device_id(struct agent *agent, const char *value);
+extern int lmap_agent_set_group_id(struct agent *agent, const char *value);
+extern int lmap_agent_set_measurement_point(struct agent *agent, const char *value);
+extern int lmap_agent_set_report_agent_id(struct agent *agent, const char *value);
+extern int lmap_agent_set_report_measurement_point(struct agent *agent, const char *value);
+extern int lmap_agent_set_controller_timeout(struct agent *agent, const char *value);
+extern int lmap_agent_set_hardware(struct agent *agent, const char *value);
+extern int lmap_agent_set_firmware(struct agent *agent, const char *value);
+extern int lmap_agent_set_version(struct agent *agent, const char *value);
+extern int lmap_agent_set_last_started(struct agent *agent, const char *value);
+
+/**
+ * A struct suppression is used to hold all config and state
+ * information related to suppressions.
+ */
+
+struct supp {
+    char *name;
+    char *start;		/* event-ref */
+    char *end;			/* event-ref */
+    struct tag *match;
+    int stop_running;
+    uint32_t flags;			/* see below */
+    struct supp *next;
+
+    int8_t state;
+};
+
+#define LMAP_SUPP_STATE_ENABLED			0x01
+#define LMAP_SUPP_STATE_DISABLED		0x02
+#define LMAP_SUPP_STATE_ACTIVE			0x03
+
+#define LMAP_SUPP_FLAG_STOP_RUNNING_SET		0x01
+
+extern struct supp * lmap_supp_new();
+extern void lmap_supp_free(struct supp *supp);
+extern int lmap_supp_valid(struct lmap *lmap, struct supp *supp);
+extern int lmap_supp_set_name(struct supp *supp, const char *value);
+extern int lmap_supp_set_start(struct supp *supp, const char *value);
+extern int lmap_supp_set_end(struct supp *supp, const char *value);
+extern int lmap_supp_add_match(struct supp *supp, const char *value);
+extern int lmap_supp_set_stop_running(struct supp *supp, const char *value);
+extern int lmap_supp_set_state(struct supp *supp, const char *value);
+
+/**
+ * A struct option is used to hold a name and value pair. This is
+ * mostly covering information from the ma-option-obj of the LMAP
+ * information model.
+ */
+
+struct option {
+    char *id;
+    char *name;
+    char *value;
+    struct option *next;
+};
+
+extern struct option * lmap_option_new();
+extern void lmap_option_free(struct option *option);
+extern int lmap_option_valid(struct lmap *lmap, struct option *option);
+extern int lmap_option_set_id(struct option *option, const char *value);
+extern int lmap_option_set_name(struct option *option, const char *value);
+extern int lmap_option_set_value(struct option *option, const char *value);
+
+/**
+ * A struct metric is used to hold a metric URI and a list of
+ * associated roles. This is mostly covering information from the
+ * ma-metric-registry-obj of the LMAP information model.
+ */
+
+struct metric {
+    char *uri;
+    struct tag *roles;
+    struct metric *next;
+};
+
+extern struct metric * lmap_metric_new();
+extern void lmap_metric_free(struct metric *metric);
+extern int lmap_metric_valid(struct lmap *lmap, struct metric *metric);
+extern int lmap_metric_set_uri(struct metric *metric, const char *value);
+extern int lmap_metric_add_role(struct metric *metric, const char *value);
+
+/**
+ * A struct tag is used to hold a simple tag. Tags are non-empty
+ * strings.
+ */
+
+struct tag {
+    char *tag;
+    struct tag *next;
+};
+
+extern struct tag * lmap_tag_new();
+extern void lmap_tag_free(struct tag *tag);
+extern int lmap_tag_valid(struct lmap *lmap, struct tag *tag);
+extern int lmap_tag_set_tag(struct tag *tag, const char *value);
+
+/**
+ * A struct action is used to hold all config and state information
+ * for actions of a schedule. This is mostly covering information from
+ * the ma-action-obj of the LMAP information model.
+ */
+
+struct action {
+    char *name;
+    char *task;
+    struct tag *destinations;
+    struct option *options;
+    struct tag *tags;
+    struct tag *suppression_tags;
+    struct action *next;
+
+    int8_t state;
+    uint64_t storage;
+    time_t last_invocation;
+    time_t last_completion;
+    int32_t last_status;
+    char *last_message;
+    time_t last_failed_completion;
+    int32_t last_failed_status;
+    char *last_failed_message;
+
+    uint32_t cnt_invocations;
+    uint32_t cnt_failures;
+    uint32_t cnt_suppressions;
+    uint32_t cnt_overlaps;
+
+    pid_t pid;
+    char *workspace;
+    uint32_t cnt_active_suppressions;
+};
+
+#define LMAP_ACTION_STATE_ENABLED		0x01
+#define LMAP_ACTION_STATE_DISABLED		0x02
+#define LMAP_ACTION_STATE_RUNNING		0x03
+#define LMAP_ACTION_STATE_SUPPRESSED		0x04
+
+extern struct action * lmap_action_new();
+extern void lmap_action_free(struct action *action);
+extern int lmap_action_valid(struct lmap *lmap, struct action *action);
+extern int lmap_action_set_name(struct action *action, const char *value);
+extern int lmap_action_set_task(struct action *action, const char *value);
+extern int lmap_action_add_option(struct action *action, struct option *option);
+extern int lmap_action_add_destination(struct action *action, const char *value);
+extern int lmap_action_add_tag(struct action *action, const char *value);
+extern int lmap_action_add_suppression_tag(struct action *action, const char *value);
+extern int lmap_action_set_state(struct action *action, const char *value);
+extern int lmap_action_set_storage(struct action *action, const char *value);
+extern int lmap_action_set_invocations(struct action *action, const char *value);
+extern int lmap_action_set_suppressions(struct action *action, const char *value);
+extern int lmap_action_set_overlaps(struct action *action, const char *value);
+extern int lmap_action_set_failures(struct action *action, const char *value);
+extern int lmap_action_set_last_invocation(struct action *action, const char *value);
+extern int lmap_action_set_last_completion(struct action *action, const char *value);
+extern int lmap_action_set_last_status(struct action *action, const char *value);
+extern int lmap_action_set_last_message(struct action *action, const char *value);
+extern int lmap_action_set_last_failed_completion(struct action *action, const char *value);
+extern int lmap_action_set_last_failed_status(struct action *action, const char *value);
+extern int lmap_action_set_last_failed_message(struct action *action, const char *value);
+extern int lmap_action_set_workspace(struct action *action, const char *value);
+
+/**
+ * A struct schedule is used to hold all config and state information
+ * for schedules. This is mostly covering information from the
+ * ma-schedule-obj of the LMAP information model.
+ */
+
+struct schedule {
+    char *name;
+    char *start;		/* event-ref */
+    char *end;			/* event-ref */
+    uint64_t duration;
+    uint8_t mode;
+    uint32_t flags;
+    struct tag *tags;
+    struct tag *suppression_tags;
+    struct action *actions;
+    struct schedule *next;
+
+    int8_t state;
+    uint64_t storage;
+    uint32_t cnt_invocations;
+    uint32_t cnt_failures;
+    uint32_t cnt_suppressions;
+    uint32_t cnt_overlaps;
+    time_t last_invocation;
+
+    char *workspace;
+    uint32_t cnt_active_suppressions;
+};
+
+#define LMAP_SCHEDULE_EXEC_MODE_SEQUENTIAL	0x01
+#define LMAP_SCHEDULE_EXEC_MODE_PARALLEL	0x02
+#define LMAP_SCHEDULE_EXEC_MODE_PIPELINED	0x03
+
+#define LMAP_SCHEDULE_FLAG_END_SET		0x01
+#define LMAP_SCHEDULE_FLAG_DURATION_SET		0x02
+#define LMAP_SCHEDULE_FLAG_EXEC_MODE_SET	0x04
+#define LMAP_SCHEDULE_FLAG_STOP_RUNNING		0x08
+
+#define LMAP_SCHEDULE_STATE_ENABLED		0x01
+#define LMAP_SCHEDULE_STATE_DISABLED		0x02
+#define LMAP_SCHEDULE_STATE_RUNNING		0x03
+#define LMAP_SCHEDULE_STATE_SUPPRESSED		0x04
+
+extern struct schedule * lmap_schedule_new();
+extern void lmap_schedule_free(struct schedule *schedule);
+extern int lmap_schedule_valid(struct lmap *lmap, struct schedule *schedule);
+extern int lmap_schedule_set_name(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_start(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_end(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_duration(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_exec_mode(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_state(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_storage(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_invocations(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_suppressions(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_overlaps(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_failures(struct schedule *schedule, const char *value);
+extern int lmap_schedule_set_last_invocation(struct schedule *schedule, const char *value);
+extern int lmap_schedule_add_tag(struct schedule *schedule, const char *value);
+extern int lmap_schedule_add_suppression_tag(struct schedule *schedule, const char *value);
+extern int lmap_schedule_add_action(struct schedule *schedule, struct action *action);
+extern int lmap_schedule_set_workspace(struct schedule *schedule, const char *value);
+
+/**
+ * A struct task is used to hold all config and state information for
+ * tasks. This is mostly covering information from the ma-task-obj of
+ * the LMAP information model.
+ */
+
+struct task {
+    char *name;
+    struct metric *metrics;
+    char *program;
+    struct option *options;
+    struct tag *tags;
+    int suppress_by_default;
+    
+    struct program *tool;
+    int option_count;
+    struct option **list;
+    uint32_t flags;			/* see below */
+    
+    struct task *next;
+};
+
+extern struct task * lmap_task_new();
+extern void lmap_task_free(struct task *task);
+extern int lmap_task_valid(struct lmap *lmap, struct task *task);
+extern int lmap_task_set_name(struct task *task, const char *value);
+extern int lmap_task_add_metric(struct task *task, struct metric *metric);
+extern int lmap_task_set_program(struct task *task, const char *value);
+extern int lmap_task_add_option(struct task *task, struct option *option);
+extern int lmap_task_add_tag(struct task *task, const char *value);
+extern int lmap_task_set_suppress_by_default(struct task *task, const char *value);
+
+#define LMAP_TASK_FLAG_SUPPRESS_BY_DEFAULT_SET	0x01
+
+/**
+ * A struct event is used to hold all config and state
+ * information related to events.
+ */
+
+struct event {
+    char *name;
+    int type;
+    int flags;
+    struct event *next;
+
+    time_t last_invocation;
+    uint32_t interval;
+    time_t start;
+    time_t end;
+    uint32_t random_spread;	/* must be < RAND_MAX */
+    
+    uint16_t months;		/* bit set months */
+    uint32_t days_of_month;	/* bit set day of month */
+    uint8_t days_of_week;	/* bit set day of week */
+    uint32_t hours;		/* bit set hours */
+    uint64_t minutes;		/* bit set minute */
+    uint64_t seconds;		/* bit set second */
+    int16_t timezone_offset;	/* minutes */
+
+    struct lmapd *lmapd;	/* back pointer to the lmapd structure */
+    struct event *start_event;
+    struct event *trigger_event;
+    struct event *fire_event;
+};
+
+#define LMAP_EVENT_TYPE_PERIODIC		0x01
+#define LMAP_EVENT_TYPE_CALENDAR		0x02
+#define LMAP_EVENT_TYPE_ONE_OFF			0x03
+#define LMAP_EVENT_TYPE_IMMEDIATE		0x04
+#define LMAP_EVENT_TYPE_STARTUP			0x05
+#define LMAP_EVENT_TYPE_CONTROLLER_LOST		0x06
+#define LMAP_EVENT_TYPE_CONTROLLER_CONNECTED	0x07
+
+#define LMAP_EVENT_FLAG_INTERVAL_SET		0x01
+#define LMAP_EVENT_FLAG_START_SET		0x02
+#define LMAP_EVENT_FLAG_END_SET			0x04
+#define LMAP_EVENT_FLAG_RANDOM_SPREAD_SET	0x08
+#define LMAP_EVENT_FLAG_TIMEZONE_OFFSET_SET	0x10
+
+extern struct event * lmap_event_new();
+extern void lmap_event_free(struct event *event);
+extern int lmap_event_valid(struct lmap *lmap, struct event *event);
+extern int lmap_event_set_name(struct event *event, const char *value);
+extern int lmap_event_set_type(struct event *event, const char *value);
+extern int lmap_event_set_interval(struct event *event, const char *value);
+extern int lmap_event_set_start(struct event *event, const char *value);
+extern int lmap_event_set_end(struct event *event, const char *value);
+extern int lmap_event_set_random_spread(struct event *event, const char *value);
+extern int lmap_event_add_month(struct event *event, const char *value);
+extern int lmap_event_add_day_of_month(struct event *event, const char *value);
+extern int lmap_event_add_day_of_week(struct event *event, const char *value);
+extern int lmap_event_add_hour(struct event *event, const char *value);
+extern int lmap_event_add_minute(struct event *event, const char *value);
+extern int lmap_event_add_second(struct event *event, const char *value);
+extern int lmap_event_set_timezone_offset(struct event *event, const char *value);
+
+extern int lmap_event_calendar_match(struct event *event, time_t *now);
+
+struct result {
+    char *schedule;
+    char *action;
+    char *task;
+    time_t start;
+    time_t end;
+    int32_t status;
+    struct meta *meta;
+    struct table *tables;
+    struct result *next;
+};
+
+extern struct result * lmap_result_new();
+extern void lmap_result_free(struct result *res);
+extern int lmap_result_valid(struct lmap *lmap, struct result *res);
+extern int lmap_result_add_table(struct result *res, struct table *tab);
+extern int lmap_result_set_schedule(struct result *res, const char *value);
+extern int lmap_result_set_action(struct result *res, const char *value);
+extern int lmap_result_set_task(struct result *res, const char *value);
+extern int lmap_result_set_start(struct result *res, const char *value);
+extern int lmap_result_set_end(struct result *res, const char *value);
+extern int lmap_result_set_status(struct result *res, const char *value);
+  
+struct table {
+    struct row *rows;
+    struct table *next;
+};
+
+extern struct table * lmap_table_new();
+extern void lmap_table_free(struct table *tab);
+extern int lmap_table_valid(struct lmap *lmap, struct table *tab);
+extern int lmap_table_add_row(struct table *tab, struct row *row);
+
+struct row {
+    struct value *values;
+    struct row *next;
+};
+
+extern struct row * lmap_row_new();
+extern void lmap_row_free(struct row *row);
+extern int lmap_row_valid(struct lmap *lmap, struct row *row);
+extern int lmap_row_add_value(struct row *row, struct value *val);
+
+struct value {
+    char *value;
+    struct value *next;
+};
+
+extern struct value * lmap_value_new();
+extern void lmap_value_free(struct value *val);
+extern int lmap_value_valid(struct lmap *lmap, struct value *val);
+extern int lmap_value_set_value(struct value *val, const char *value);
+
+#endif

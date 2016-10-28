@@ -1,0 +1,61 @@
+/*
+ * This file is part of lmapd.
+ *
+ * lmapd is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * lmapd is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lmapd. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef LMAPD_H
+#define LMAPD_H
+
+#define LMAPD_LMAPD		"@PROJECT_NAME@"
+#define LMAPD_LMAPCTL		"lmapctl"
+
+#define LMAPD_INSTALL_PREFIX	"@CMAKE_INSTALL_PREFIX@"
+#define LMAPD_CONFIG_DIR	"@CMAKE_INSTALL_PREFIX@/etc/lmapd"
+#define LMAPD_SPOOL_DIR		"@CMAKE_INSTALL_PREFIX@/var/spool/lmapd"
+#define LMAPD_QUEUE_DIR		"@CMAKE_INSTALL_PREFIX@/var/spool/lmapd/queue"
+#define LMAPD_RUN_DIR		"@CMAKE_INSTALL_PREFIX@/var/run"
+
+#define LMAPD_CONFIG_FILE	"lmapd-config.xml"
+#define LMAPD_STATUS_FILE	"lmapd-state.xml"
+#define LMAPD_PID_FILE		"lmapd.pid"
+
+#include <event2/event.h>
+
+/**
+ * A struct lmapd is ued to hold information about the lmapd daemon
+ * itself that is not part of the data model (that is all internal
+ * information that is not visible outside).
+ */
+
+struct lmapd {
+    struct lmap *lmap;
+    
+    char *config_path;
+    char *queue_path;
+    char *run_path;
+    
+    struct event_base *base;
+    int flags;
+};
+
+#define LMAPD_FLAG_RESTART	0x01
+
+extern struct lmapd * lmapd_new();
+extern void lmapd_free(struct lmapd *lmapd);
+extern int lmapd_set_config_path(struct lmapd *lmapd, const char *value);
+extern int lmapd_set_queue_path(struct lmapd *lmapd, const char *value);
+extern int lmapd_set_run_path(struct lmapd *lmapd, const char *value);
+
+#endif

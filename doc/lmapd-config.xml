@@ -1,0 +1,176 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <lmap xmlns="urn:ietf:params:xml:ns:yang:ietf-lmap-control">
+
+    <agent>
+      <agent-id>550e8400-e29b-41d4-a716-446655440000</agent-id>
+      <device-id>urn:dev:mac:0024befffe804ff1</device-id>
+      <group-id>network measurement at the north-pole</group-id>
+      <report-agent-id>true</report-agent-id>
+    </agent>
+
+    <schedules>
+      <schedule>
+        <name>demo</name>
+        <start>every-minute</start>
+<!--        <execution-mode>parallel</execution-mode> -->
+        <execution-mode>sequential</execution-mode>
+        <action>
+          <name>mtr</name>
+          <task>mtr</task>
+	  <option>
+	    <id>www.ietf.org</id>
+	    <value>www.ietf.org</value>
+	  </option>
+	  <option>
+	    <id>www.ieee.org</id>
+	    <value>www.ieee.org</value>
+	  </option>
+	  <destination>report-primary</destination>
+        </action>
+        <action>
+          <name>happy</name>
+          <task>happy</task>
+	  <option>
+	    <id>www.ietf.org</id>
+	    <value>www.ietf.org</value>
+	  </option>
+	  <option>
+	    <id>www.ieee.org</id>
+	    <value>www.ieee.org</value>
+	  </option>
+	  <destination>report-primary</destination>
+	  <destination>report-backup</destination>
+        </action>
+      </schedule>
+
+      <!-- report results every six hours to our main collector -->
+      <schedule>
+        <name>report-primary</name>
+        <start>every-six-hours</start>
+        <action>
+          <name>report</name>
+          <task>lmap-reporting-task</task>
+          <option>
+            <id>collector-uri</id>
+            <value>https://collector.example.com/restconf/operations/ietf-lmap-report:report</value>
+          </option>
+        </action>
+      </schedule>
+      
+      <!-- report results once per day to our shadow collector -->
+      <schedule>
+        <name>report-backup</name>
+        <start>daily</start>
+        <action>
+          <name>report</name>
+          <task>lmap-reporting-task</task>
+          <option>
+            <id>collector-uri</id>
+            <value>https://shadow.example.com/restconf/operations/ietf-lmap-report:report</value>
+          </option>
+        </action>
+      </schedule>
+    </schedules>
+
+    <tasks>
+      <!-- mtr traceroute measurement task -->
+      <task>
+        <name>mtr</name>
+        <program>/usr/bin/mtr</program>
+	<option>
+	  <id>numeric</id>
+	  <name>--no-dns</name>
+	</option>
+	<option>
+	  <id>csv</id>
+	  <name>--csv</name>
+	</option>
+	<option>
+	  <id>lookup AS numbers</id>
+	  <name>-z</name>
+	</option>
+	<option>
+	  <id>one cycle</id>
+	  <name>--report-cycles=3</name>
+	</option>
+      </task>
+
+      <!-- happy connection time measurement task -->
+      <task>
+        <name>happy</name>
+        <program>/usr/bin/happy</program>
+	<option>
+	  <id>csv</id>
+	  <name>-m</name>
+	</option>
+	<option>
+	  <id>one query</id>
+	  <name>-q</name>
+	  <value>1</value>
+	</option>
+      </task>
+
+      <!-- configuration of a reporter task -->
+      <task>
+        <name>lmap-reporting-task</name>
+        <program>/usr/bin/lmap-reporter</program>
+        <option>
+          <id>collector-uri</id>
+          <value>https://example.com/restconf/operations/ietf-lmap-report:report</value>
+        </option>
+      </task>
+    </tasks>
+    
+    <events>
+
+      <event>
+        <name>every-minute</name>
+        <periodic>
+          <interval>60</interval>
+        </periodic>
+      </event>
+<!--
+      <event>
+        <name>every-minute</name>
+        <calendar>
+	  <month>*</month>
+	  <day-of-month>*</day-of-month>
+	  <day-of-week>*</day-of-week>
+	  <hour>*</hour>
+	  <minute>*</minute>
+	  <second>42</second>
+        </calendar>
+      </event>
+-->
+      <event>
+        <name>every-six-hours</name>
+        <calendar>
+          <month>*</month>
+          <day-of-month>*</day-of-month>
+          <day-of-week>*</day-of-week>
+          <hour>0</hour>
+          <hour>6</hour>
+          <hour>12</hour>
+          <hour>18</hour>
+          <minute>0</minute>
+          <second>0</second>
+        </calendar>
+        <random-spread>3600000</random-spread>
+      </event>
+
+      <event>
+        <name>daily</name>
+        <calendar>
+          <month>*</month>
+          <day-of-week>*</day-of-week>
+          <day-of-month>*</day-of-month>
+          <hour>0</hour>
+          <minute>0</minute>
+          <second>0</second>
+          <timezone-offset>+00:00</timezone-offset>
+        </calendar>
+      </event>
+      
+    </events>
+  </lmap>
+</config>
