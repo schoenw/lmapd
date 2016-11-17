@@ -26,11 +26,11 @@ module ietf-lmap-common {
      This module defines typedefs and groupings but no schema
      tree elements.";
   
-  revision "2016-07-07" {
+  revision "2016-11-18" {
     description
-     "Initial version";
+      "Initial version";
     reference
-     "RFC XXX: A YANG Data Model for LMAP Measurement Agents";
+      "RFC XXX: A YANG Data Model for LMAP Measurement Agents";
   }
 
   /*
@@ -83,6 +83,17 @@ module ietf-lmap-common {
     }
     description
       "A wildcard for calendar scheduling entries.";
+  }
+
+  typedef cycle-number {
+    type string {
+      pattern '[0-9]{8}\.[0-9]{6}';
+    }
+    description
+      "A cycle number represented in the format YYYYMMDD.HHMMSS
+       where YYYY represents the year, MM the month (1..12), DD 
+       the day of the months (01..31), HH the hour (00..23), MM
+       the minute (00..59), and SS the second (00..59).";
   }
 
   typedef month {
@@ -306,26 +317,26 @@ module ietf-lmap-common {
    * Groupings
    */
   
-  grouping metrics-grouping {
+  grouping registry-grouping {
     description
-      "This grouping models a list of entries in a metrics
-       registry.";
+      "This grouping models a list of entries in a registry
+       that identify functions of a tasks.";
 
     list metric {
       key uri;
       description
-        "A list of entries in a metrics registry.";
+        "A list of entries in a registry identifying functions.";
 
       leaf uri {
         type inet:uri;
         description
-          "A URI identifying an entry in a metrics registry.";
+          "A URI identifying an entry in a registry.";
       }
 
       leaf-list role {
         type string;
         description
-          "A set of roles for this metrics.";
+          "A set of roles for the identified registry entry.";
       }
     }
   }

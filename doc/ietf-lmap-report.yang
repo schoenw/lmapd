@@ -29,11 +29,11 @@ module ietf-lmap-report {
      Platform (LMAP), to result data collectors. This data model is
      expected to be implemented by a collector.";
   
-  revision "2016-07-07" {
+  revision "2016-11-18" {
     description
-     "Initial version";
+      "Initial version";
     reference
-     "RFC XXX: A YANG Data Model for LMAP Measurement Agents";
+      "RFC XXX: A YANG Data Model for LMAP Measurement Agents";
   }
 
   rpc report {
@@ -96,6 +96,19 @@ module ietf-lmap-report {
             "The name of the task that produced the result.";
         }
 
+        container parameters {
+          description
+            "This container is a place-holder for run-time 
+             parameters defined in task-specific data models
+	     augmenting the base lmap report data model.";
+               
+          choice extension {
+            description
+              "This choice is provided to augment in different 
+               sets of parameters.";
+          }
+        }
+        
         uses lmap:task-options-grouping {
           description
             "The list of options there were in use then the
@@ -114,6 +127,15 @@ module ietf-lmap-report {
              Measurement Cycle ID.";
         }
 
+        leaf event {
+          type yang:date-and-time;
+          description
+            "The date and time of the event that triggered the 
+             schedule of the action that produced the reported
+             result values. The date and time does not include
+             any added randomization.";
+        }
+
         leaf start {
           type yang:date-and-time;
           mandatory true;
@@ -129,12 +151,23 @@ module ietf-lmap-report {
              this result finished.";
         }
 
+        leaf cycle-number {
+          type lmap:cycle-number;
+          description
+            "The optional cycle number is the time closest to 
+             the time reported in the event leaf that is a multiple
+             of the cycle-interval of the event that triggered the 
+             execution of the schedule. The value is only present
+             if the event that triggered the execution of the 
+             schedule has a defined cycle-interval.";
+        }
+
         leaf status {
           type lmap:status-code;
           mandatory true;
           description
             "The status code returned by the execution of this 
-             task.";
+             action.";
         }
         
         list conflict {
@@ -161,9 +194,9 @@ module ietf-lmap-report {
           leaf task-name {
             type lmap:identifier;
             description
-              "The name of the task executed by an action within the    
-               schedule that might have impacted the execution of the 
-               task that has produced this result.";
+              "The name of the task executed by an action within
+               the schedule that might have impacted the execution
+               of the task that has produced this result.";
           }
         }
 
@@ -171,7 +204,7 @@ module ietf-lmap-report {
           description
             "A list of result tables.";
         
-          uses lmap:metrics-grouping;
+          uses lmap:registry-grouping;
       
           leaf-list column {
             type string;

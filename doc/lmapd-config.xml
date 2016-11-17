@@ -3,9 +3,9 @@
 
     <agent>
       <agent-id>550e8400-e29b-41d4-a716-446655440000</agent-id>
-      <device-id>urn:dev:mac:0024befffe804ff1</device-id>
       <group-id>network measurement at the north-pole</group-id>
       <report-agent-id>true</report-agent-id>
+      <report-group-id>false</report-group-id>
     </agent>
 
     <schedules>
