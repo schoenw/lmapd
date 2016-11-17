@@ -7,12 +7,12 @@ lmapd is the proof-of-concept daemon implemntation for the Large-Scale Measureme
 ### Version
 0.3
 
-### Tech
+### Dependencies
 
-lmapd uses a number of open source projects to work properly:
+lmapd depends on a few open source libraries:
 
-* [libevent] - Event library
-* [libxml2] - XML C parser
+* [libevent] - an event notification library
+* [libxml2] - an XML parser written in C
 
 ### Installation
 
@@ -20,7 +20,7 @@ The build system is based on cmake.
 
 ```sh
 $ sudo apt-get install cmake pkg-config libevent-dev libxml2-dev check
-$ git clone https://github.com/ungureanuvladvictor/lmapd.git
+$ git clone https://github.com/schoenw/lmapd.git
 $ cd lmapd
 $ mkdir build
 $ cd build
@@ -92,6 +92,9 @@ The following people have helped with suggestions and ideas:
 - Jürgen Schönwälder
 - Roxana Nadrag
 - Alexandru Barbarosie
+
+Development of this code was kindly supported by the EU FP7 Leone and
+Flamingo research projects.
 
 License
 ----
