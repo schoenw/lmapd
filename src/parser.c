@@ -56,10 +56,10 @@ parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx)
 	int (*func)(struct agent *a, const char *c);
     } tab[] = {
 	{ "agent-id",		lmap_agent_set_agent_id },
-	{ "device-id",		lmap_agent_set_device_id },
 	{ "group-id",		lmap_agent_set_group_id },
 	{ "measurement-point",	lmap_agent_set_measurement_point },
 	{ "report-agent-id",	lmap_agent_set_report_agent_id },
+	{ "report-group-id",	lmap_agent_set_report_group_id },
 	{ "report-measurement-point",	lmap_agent_set_report_measurement_point },
 	{ "controller-timeout",	lmap_agent_set_controller_timeout },
 	{ NULL, NULL }
@@ -121,9 +121,6 @@ parse_agent_state(struct lmap *lmap, xmlXPathContextPtr ctx)
 	int (*func)(struct agent *a, const char *c);
     } tab[] = {
 	{ "agent-id",		lmap_agent_set_agent_id },
-	{ "device-id",		lmap_agent_set_device_id },
-	{ "hardware",		lmap_agent_set_hardware },
-	{ "firmware",		lmap_agent_set_firmware },
 	{ "version",		lmap_agent_set_version },
 	{ "last-started",	lmap_agent_set_last_started },
 	{ NULL, NULL }
@@ -1475,12 +1472,15 @@ render_agent(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
     }
 
     render_leaf(node, ns, "agent-id", agent->agent_id);
-    render_leaf(node, ns, "device-id", agent->device_id);
     render_leaf(node, ns, "group-id", agent->group_id);
     render_leaf(node, ns, "measurement-point", agent->measurement_point);
     if (agent->flags & LMAP_AGENT_FLAG_REPORT_AGENT_ID_SET) {
 	render_leaf(node, ns, "report-agent-id",
 		    agent->report_agent_id ? "true" : "false");
+    }
+    if (agent->flags & LMAP_AGENT_FLAG_REPORT_GROUP_ID_SET) {
+	render_leaf(node, ns, "report-group-id",
+		    agent->report_group_id ? "true" : "false");
     }
     if (agent->flags & LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET) {
 	render_leaf(node, ns, "report-measurement-point",
@@ -1507,9 +1507,6 @@ render_agent_state(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
     }
 
     render_leaf(node, ns, "agent-id", agent->agent_id);
-    render_leaf(node, ns, "device-id", agent->device_id);
-    render_leaf(node, ns, "hardware", agent->hardware);
-    render_leaf(node, ns, "firmware", agent->firmware);
     render_leaf(node, ns, "version", agent->version);
     if (agent->last_started) {
 	render_leaf_datetime(node, ns, "last-started", &agent->last_started);

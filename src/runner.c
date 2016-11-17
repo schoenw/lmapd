@@ -998,7 +998,7 @@ lmapd_run(struct lmapd *lmapd)
 		break;
 		
 	    default:
-		lmap_wrn("ignoring event '%s'", event->name);
+		lmap_wrn("ignoring event '%s' (not implemented)", event->name);
 		break;
 	    }
 	}

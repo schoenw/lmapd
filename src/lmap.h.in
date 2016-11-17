@@ -62,36 +62,33 @@ extern struct schedule * lmap_find_schedule(struct lmap *lmap, const char *name)
 
 struct agent {
     char *agent_id;
-    char *device_id;
     char *group_id;
     char *measurement_point;
     int report_agent_id;
+    int report_group_id;
     int report_measurement_point;
     uint32_t controller_timeout;	/* seconds */
     uint32_t flags;			/* see below */
 
-    char *hardware;
-    char *firmware;
     char *version;
     time_t last_started;
 };
 
 #define LMAP_AGENT_FLAG_REPORT_AGENT_ID_SET		0x01
-#define LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET	0x02
-#define LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET		0x04
+#define LMAP_AGENT_FLAG_REPORT_GROUP_ID_SET		0x02
+#define LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET	0x04
+#define LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET		0x08
 
 extern struct agent * lmap_agent_new();
 extern void lmap_agent_free(struct agent *agent);
 extern int lmap_agent_valid(struct lmap *lmap, struct agent *agent);
 extern int lmap_agent_set_agent_id(struct agent *agent, const char *value);
-extern int lmap_agent_set_device_id(struct agent *agent, const char *value);
 extern int lmap_agent_set_group_id(struct agent *agent, const char *value);
 extern int lmap_agent_set_measurement_point(struct agent *agent, const char *value);
 extern int lmap_agent_set_report_agent_id(struct agent *agent, const char *value);
+extern int lmap_agent_set_report_group_id(struct agent *agent, const char *value);
 extern int lmap_agent_set_report_measurement_point(struct agent *agent, const char *value);
 extern int lmap_agent_set_controller_timeout(struct agent *agent, const char *value);
-extern int lmap_agent_set_hardware(struct agent *agent, const char *value);
-extern int lmap_agent_set_firmware(struct agent *agent, const char *value);
 extern int lmap_agent_set_version(struct agent *agent, const char *value);
 extern int lmap_agent_set_last_started(struct agent *agent, const char *value);
 

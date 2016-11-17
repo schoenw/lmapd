@@ -638,11 +638,8 @@ lmap_agent_free(struct agent *agent)
 {
     if (agent) {
         xfree(agent->agent_id);
-	xfree(agent->device_id);
 	xfree(agent->group_id);
 	xfree(agent->measurement_point);
-	xfree(agent->hardware);
-	xfree(agent->firmware);
 	xfree(agent->version);
 	xfree(agent);
     }
@@ -656,6 +653,11 @@ int lmap_agent_valid(struct lmap *lmap, struct agent *agent)
 
     if (agent->report_agent_id && ! agent->agent_id) {
 	lmap_err("report-agent-id requires an agent-id");
+	valid = 0;
+    }
+
+    if (agent->report_group_id && ! agent->group_id) {
+	lmap_err("report-group-id requires a group-id");
 	valid = 0;
     }
 
@@ -697,12 +699,6 @@ lmap_agent_set_agent_id(struct agent *agent, const char *value)
 }
 
 int
-lmap_agent_set_device_id(struct agent *agent, const char *value)
-{
-    return set_string(&agent->device_id, value, __FUNCTION__);
-}
-
-int
 lmap_agent_set_group_id(struct agent *agent, const char *value)
 {
     return set_string(&agent->group_id, value, __FUNCTION__);
@@ -722,6 +718,18 @@ lmap_agent_set_report_agent_id(struct agent *agent, const char *value)
     ret = set_boolean(&agent->report_agent_id, value, __FUNCTION__);
     if (ret == 0) {
 	agent->flags |= LMAP_AGENT_FLAG_REPORT_AGENT_ID_SET;
+    }
+    return ret;
+}
+
+int
+lmap_agent_set_report_group_id(struct agent *agent, const char *value)
+{
+    int ret;
+
+    ret = set_boolean(&agent->report_group_id, value, __FUNCTION__);
+    if (ret == 0) {
+	agent->flags |= LMAP_AGENT_FLAG_REPORT_GROUP_ID_SET;
     }
     return ret;
 }
@@ -746,16 +754,6 @@ int lmap_agent_set_controller_timeout(struct agent *agent, const char *value)
 	agent->flags |= LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET;
     }
     return ret;
-}
-
-int lmap_agent_set_hardware(struct agent *agent, const char *value)
-{
-    return set_string(&agent->hardware, value, __FUNCTION__);
-}
-
-int lmap_agent_set_firmware(struct agent *agent, const char *value)
-{
-    return set_string(&agent->firmware, value, __FUNCTION__);
 }
 
 int lmap_agent_set_version(struct agent *agent, const char *value)

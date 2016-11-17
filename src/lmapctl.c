@@ -519,8 +519,6 @@ status_cmd(int argc, char *argv[])
     if (lmap && lmap->agent) {
 	struct agent *agent = lmap->agent;
 	printf("agent-id:     %s\n", agent->agent_id);
-	printf("hardware:     %s\n", agent->hardware);
-	printf("firmware:     %s\n", agent->firmware);
 	printf("version:      %s\n", agent->version);
 	printf("last-started: %s\n",
 	       render_datetime_long(&agent->last_started));

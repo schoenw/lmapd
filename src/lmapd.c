@@ -148,16 +148,7 @@ read_config(struct lmapd *lmapd)
     }
     
     if (lmapd->lmap->agent) {
-	struct utsname utsname;
 	char buf[256];
-	
-	if (uname(&utsname) == 0) {
-	    snprintf(buf, sizeof(buf), "%s %s",
-		     utsname.sysname, utsname.machine);
-	    lmap_agent_set_hardware(lmapd->lmap->agent, buf);
-	    snprintf(buf, sizeof(buf), "%s", utsname.version);
-	    lmap_agent_set_firmware(lmapd->lmap->agent, buf);
-	}
 	snprintf(buf, sizeof(buf), "%s version %d.%d", LMAPD_LMAPD,
 		 LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
 	lmap_agent_set_version(lmapd->lmap->agent, buf);
