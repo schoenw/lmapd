@@ -1,0 +1,156 @@
+<config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <lmap xmlns="urn:ietf:params:xml:ns:yang:ietf-lmap-control">
+
+    <agent>
+      <agent-id>550e8400-e29b-41d4-a716-446655440000</agent-id>
+      <report-agent-id>true</report-agent-id>
+    </agent>
+
+    <schedules>
+      <!-- The schedule S1 first updates a list of ping targets
+           and subsequently sends a ping to all targets. -->
+      <schedule>
+        <name>S1</name>
+        <start>E1</start>
+        <execution-mode>sequential</execution-mode>
+        <action>
+          <name>A1</name>
+          <task>update-ping-targets</task>
+        </action>
+        <action>
+          <name>A2</name>
+          <task>ping-all-targets</task>
+          <destination>S3</destination>
+        </action>
+        <suppression-tag>measurement:ping</suppression-tag>
+      </schedule>
+      <!-- The schedule S2 executes two traceroutes concurrently. -->
+      <schedule>
+        <name>S2</name>
+        <start>E1</start>
+        <execution-mode>parallel</execution-mode>
+        <action>
+          <name>A1</name>
+          <task>traceroute</task>
+          <option>
+            <id>target</id>
+            <name>target</name>
+            <value>2001:db8::1</value>
+          </option>
+          <destination>S3</destination>
+        </action>
+        <action>
+          <name>A2</name>
+          <task>traceroute</task>
+          <option>
+            <id>target</id>
+            <name>target</name>
+            <value>2001:db8::2</value>
+          </option>
+          <destination>S3</destination>
+        </action>
+        <suppression-tag>measurement:traceroute</suppression-tag>
+      </schedule>
+      <!-- The schedule S3 sends measurement data to a collector. -->
+      <schedule>
+        <name>S3</name>
+        <start>E2</start>
+        <action>
+          <name>A1</name>
+          <task>report</task>
+          <option>
+            <id>collector</id>
+            <name>collector</name>
+            <value>https://collector.example.com/</value>
+          </option>
+        </action>
+      </schedule>
+    </schedules>
+
+    <suppressions>
+      <!-- stop all measurements if we got orphaned -->
+      <suppression>
+        <name>orphaned</name>
+        <start>controller-lost</start>
+        <end>controller-connected</end>
+        <match>measurement:*</match>
+      </suppression>
+    </suppressions>
+    
+    <tasks>
+      <!-- configuration of an update-ping-targets task -->
+      <task>
+        <name>update-ping-targets</name>
+        <program>/usr/bin/fping-update-targets</program>
+      </task>
+      <!-- configuration of a ping-all-targets task -->
+      <task>
+        <name>ping-all-targets</name>
+        <program>/usr/bin/fping</program>
+      </task>
+      <!-- configuration of a traceroute task -->
+      <task>
+        <name>traceroute</name>
+        <program>/usr/bin/mtr</program>
+        <option>
+          <id>csv</id>
+          <name>--csv</name>
+        </option>
+      </task>
+      <!-- configuration of a reporter task -->
+      <task>
+        <name>report</name>
+        <program>/usr/bin/lmap-report</program>
+      </task>
+
+      <task>
+        <name>ippm-udp-latency-client</name>
+        <program>/usr/bin/ippm-udp-latency</program>
+        <metric>
+          <uri>urn:example:tbd</uri>
+          <role>client</role>
+        </metric>
+        <tag>active</tag>
+      </task>
+    </tasks>
+    
+    <events>
+      <!-- The event E1 triggers every hour during September 2016
+           with a random spread of one minute. -->
+      <event>
+        <name>E1</name>
+        <periodic>
+          <interval>3600000</interval>
+          <start>2016-09-01T00:00:00+00:00</start>
+          <end>2016-11-01T00:00:00+00:00</end>
+        </periodic>
+        <random-spread>60</random-spread>   <!-- seconds -->
+      </event>
+      <!-- The event E2 triggers on Mondays at 4am UTC -->
+      <event>
+        <name>E2</name>
+        <calendar>
+          <month>*</month>
+          <day-of-week>monday</day-of-week>
+          <day-of-month>*</day-of-month>
+          <hour>4</hour>
+          <minute>0</minute>
+          <second>0</second>
+          <timezone-offset>+00:00</timezone-offset>
+        </calendar>
+      </event>
+      <!-- The event contoller-lost triggers when we lost 
+           connectivity with the controller. -->
+      <event>
+        <name>controller-lost</name>
+        <controller-lost/>
+      </event>
+      <!-- The event contoller-connected triggers when we
+           (re)established connectivity with the controller. -->
+      <event>
+        <name>controller-connected</name>
+        <controller-connected/>
+      </event>
+    </events>
+  </lmap>
+</config>
