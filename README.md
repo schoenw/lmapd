@@ -1,8 +1,8 @@
 # lmapd
-[![Build Status](https://travis-ci.org/ungureanuvladvictor/lmapd.svg?branch=development)](https://travis-ci.org/ungureanuvladvictor/lmapd)
+[![Build Status](https://travis-ci.org/schoenw/lmapd.svg?branch=development)](https://travis-ci.org/schoenw/lmapd)
 
 
-lmapd is the proof-of-concept daemon implemntation for the Large-Scale Measurement Platforms (LMAP) Protocol
+lmapd is the proof-of-concept daemon implementation for the Large-Scale Measurement Platforms (LMAP) information and data model
 
 ### Version
 0.3
@@ -84,8 +84,8 @@ $ genhtml app.info
  - Unify the reporting of measurement results
 
 
-Acknowledgments
---
+### Acknowledgments
+
 The following people have helped with suggestions and ideas:
 
 - Vaibhav Bajpai
@@ -96,8 +96,7 @@ The following people have helped with suggestions and ideas:
 Development of this code was kindly supported by the EU FP7 Leone and
 Flamingo research projects.
 
-License
-----
+### License
 
 GPLv3
 
