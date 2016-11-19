@@ -289,36 +289,36 @@ parse_option(xmlNodePtr option_node)
     return option;
 }
 
-static struct metric *
-parse_metric(xmlNodePtr metric_node)
+static struct registry *
+parse_registry(xmlNodePtr registry_node)
 {
     int j;
     xmlNodePtr node;
-    struct metric *metric;
+    struct registry *registry;
 
     struct {
 	char *name;
-	int (*func)(struct metric *s, const char *c);
+	int (*func)(struct registry *s, const char *c);
     } tab[] = {
-	{ "uri",		lmap_metric_set_uri },
-	{ "role",               lmap_metric_add_role },
+	{ "uri",		lmap_registry_set_uri },
+	{ "role",               lmap_registry_add_role },
 	{ NULL, NULL }
     };
 
-    metric = lmap_metric_new();
-    if (! metric) {
+    registry = lmap_registry_new();
+    if (! registry) {
 	return NULL;
     }
 
-    for (node = xmlFirstElementChild(metric_node);
+    for (node = xmlFirstElementChild(registry_node);
 	 node; node = xmlNextElementSibling(node)) {
 
-	if (node->ns != metric_node->ns) continue;
+	if (node->ns != registry_node->ns) continue;
 
 	for (j = 0; tab[j].name; j++) {
 	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
 		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(metric, (char *) content);
+		tab[j].func(registry, (char *) content);
 		if (content) {
 		    xmlFree(content);
 		}
@@ -330,7 +330,7 @@ parse_metric(xmlNodePtr metric_node)
 	}
     }
 
-    return metric;
+    return registry;
 }
 
 static struct task *
@@ -367,9 +367,9 @@ parse_task(xmlNodePtr task_node)
 	    continue;
 	}
 
-	if (!xmlStrcmp(node->name, BAD_CAST "metric")) {
-	    struct metric *metric = parse_metric(node);
-	    lmap_task_add_metric(task, metric);
+	if (!xmlStrcmp(node->name, BAD_CAST "registry")) {
+	    struct registry *registry = parse_registry(node);
+	    lmap_task_add_registry(task, registry);
 	    continue;
 	}
 
@@ -1416,22 +1416,22 @@ render_leaf_minsecs(xmlNodePtr root, xmlNsPtr ns, char *name, uint64_t minsecs)
 }
 
 static void
-render_metric(struct metric *metric, xmlNodePtr root, xmlNsPtr ns)
+render_registry(struct registry *registry, xmlNodePtr root, xmlNsPtr ns)
 {
     struct tag *tag;
     xmlNodePtr node;
 
-    if (! metric) {
+    if (! registry) {
 	return;
     }
     
-    node = xmlNewChild(root, ns, BAD_CAST "metric", NULL);
+    node = xmlNewChild(root, ns, BAD_CAST "registry", NULL);
     if (! node) {
 	return;
     }
 
-    render_leaf(node, ns, "uri", metric->uri);
-    for (tag = metric->roles; tag; tag = tag->next) {
+    render_leaf(node, ns, "uri", registry->uri);
+    for (tag = registry->roles; tag; tag = tag->next) {
 	render_leaf(node, ns, "role", tag->tag);
     }
 }
@@ -1827,7 +1827,7 @@ render_suppressions_state(struct supp *supp, xmlNodePtr root, xmlNsPtr ns)
 static void
 render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns)
 {
-    struct metric *metric;
+    struct registry *registry;
     struct option *option;
     struct tag *tag;
     xmlNodePtr node;
@@ -1847,8 +1847,8 @@ render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns)
 	    continue;
 	}
 	render_leaf(node, ns, "name", task->name);
-	for (metric = task->metrics; metric; metric = metric->next) {
-	    render_metric(metric, node, ns);
+	for (registry = task->registries; registry; registry = registry->next) {
+	    render_registry(registry, node, ns);
 	}
 	render_leaf(node, ns, "program", task->program);
 	for (option = task->options; option; option = option->next) {

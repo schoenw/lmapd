@@ -108,20 +108,20 @@ START_TEST(test_lmap_option)
 }
 END_TEST
 
-START_TEST(test_lmap_metric)
+START_TEST(test_lmap_registry)
 {
-    struct metric *metric;
+    struct registry *registry;
 
-    metric = lmap_metric_new();
-    ck_assert_int_eq(lmap_metric_valid(NULL, metric), 0);
-    ck_assert_str_eq(last_error_msg, "metric requires a uri");
-    ck_assert_int_eq(lmap_metric_set_uri(metric, "uri:example"), 0);
-    ck_assert_int_eq(lmap_metric_valid(NULL, metric), 1);
-    ck_assert_int_eq(lmap_metric_add_role(metric, "foo"), 0);
-    ck_assert_int_eq(lmap_metric_valid(NULL, metric), 1);
-    ck_assert_int_eq(lmap_metric_add_role(metric, "bar"), 0);
-    ck_assert_int_eq(lmap_metric_valid(NULL, metric), 1);
-    lmap_metric_free(metric);
+    registry = lmap_registry_new();
+    ck_assert_int_eq(lmap_registry_valid(NULL, registry), 0);
+    ck_assert_str_eq(last_error_msg, "registry requires a uri");
+    ck_assert_int_eq(lmap_registry_set_uri(registry, "uri:example"), 0);
+    ck_assert_int_eq(lmap_registry_valid(NULL, registry), 1);
+    ck_assert_int_eq(lmap_registry_add_role(registry, "foo"), 0);
+    ck_assert_int_eq(lmap_registry_valid(NULL, registry), 1);
+    ck_assert_int_eq(lmap_registry_add_role(registry, "bar"), 0);
+    ck_assert_int_eq(lmap_registry_valid(NULL, registry), 1);
+    lmap_registry_free(registry);
 }
 END_TEST
 
@@ -344,7 +344,7 @@ START_TEST(test_lmap_task)
     int c;
     struct tag *tag;
     struct task *task;
-    struct metric *metric;
+    struct registry *registry;
     struct option *option;
     
     task = lmap_task_new();
@@ -366,9 +366,9 @@ START_TEST(test_lmap_task)
     }
     ck_assert_int_eq(c, 3);
 
-    metric = lmap_metric_new();
-    ck_assert_int_eq(lmap_metric_set_uri(metric, "urn:example"), 0);
-    ck_assert_int_eq(lmap_task_add_metric(task, metric), 0);
+    registry = lmap_registry_new();
+    ck_assert_int_eq(lmap_registry_set_uri(registry, "urn:example"), 0);
+    ck_assert_int_eq(lmap_task_add_registry(task, registry), 0);
     ck_assert_int_eq(lmap_task_valid(NULL, task), 1);
 
     option = lmap_option_new();
@@ -661,11 +661,11 @@ START_TEST(test_parser_config_tasks)
         "        <lmapc:name>foo</lmapc:name>"
         "        <name>bar</name>"
         "        <x:name>baz</x:name>"
-	"        <lmapc:metric>"
+	"        <lmapc:registry>"
 	"          <lmapc:uri>urn:example</lmapc:uri>"
 	"          <lmapc:role>client</lmapc:role>"
 	"          <lmapc:role>server</lmapc:role>"
-	"        </lmapc:metric>"
+	"        </lmapc:registry>"
 	"        <lmapc:program>noop</lmapc:program>"
 	"        <lmapc:option>"
 	"          <lmapc:id>numeric</lmapc:id>"
@@ -689,11 +689,11 @@ START_TEST(test_parser_config_tasks)
         "    <lmapc:tasks>\n"
         "      <lmapc:task>\n"
         "        <lmapc:name>foo</lmapc:name>\n"
-	"        <lmapc:metric>\n"
+	"        <lmapc:registry>\n"
 	"          <lmapc:uri>urn:example</lmapc:uri>\n"
 	"          <lmapc:role>client</lmapc:role>\n"
 	"          <lmapc:role>server</lmapc:role>\n"
-	"        </lmapc:metric>\n"
+	"        </lmapc:registry>\n"
         "        <lmapc:program>noop</lmapc:program>\n"
 	"        <lmapc:option>\n"
 	"          <lmapc:id>numeric</lmapc:id>\n"
@@ -1714,7 +1714,7 @@ Suite * lmap_suite(void)
 
     tcase_add_checked_fixture(tc_core, setup, teardown);
     tcase_add_test(tc_core, test_lmap_agent);
-    tcase_add_test(tc_core, test_lmap_metric);
+    tcase_add_test(tc_core, test_lmap_registry);
     tcase_add_test(tc_core, test_lmap_option);
     tcase_add_test(tc_core, test_lmap_tag);
     tcase_add_test(tc_core, test_lmap_suppression);

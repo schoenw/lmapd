@@ -146,22 +146,22 @@ extern int lmap_option_set_name(struct option *option, const char *value);
 extern int lmap_option_set_value(struct option *option, const char *value);
 
 /**
- * A struct metric is used to hold a metric URI and a list of
+ * A struct registry is used to hold a registry URI and a list of
  * associated roles. This is mostly covering information from the
- * ma-metric-registry-obj of the LMAP information model.
+ * ma-registry-obj of the LMAP information model.
  */
 
-struct metric {
+struct registry {
     char *uri;
     struct tag *roles;
-    struct metric *next;
+    struct registry *next;
 };
 
-extern struct metric * lmap_metric_new();
-extern void lmap_metric_free(struct metric *metric);
-extern int lmap_metric_valid(struct lmap *lmap, struct metric *metric);
-extern int lmap_metric_set_uri(struct metric *metric, const char *value);
-extern int lmap_metric_add_role(struct metric *metric, const char *value);
+extern struct registry * lmap_registry_new();
+extern void lmap_registry_free(struct registry *registry);
+extern int lmap_registry_valid(struct lmap *lmap, struct registry *registry);
+extern int lmap_registry_set_uri(struct registry *registry, const char *value);
+extern int lmap_registry_add_role(struct registry *registry, const char *value);
 
 /**
  * A struct tag is used to hold a simple tag. Tags are non-empty
@@ -314,7 +314,7 @@ extern int lmap_schedule_set_workspace(struct schedule *schedule, const char *va
 
 struct task {
     char *name;
-    struct metric *metrics;
+    struct registry *registries;
     char *program;
     struct option *options;
     struct tag *tags;
@@ -332,7 +332,7 @@ extern struct task * lmap_task_new();
 extern void lmap_task_free(struct task *task);
 extern int lmap_task_valid(struct lmap *lmap, struct task *task);
 extern int lmap_task_set_name(struct task *task, const char *value);
-extern int lmap_task_add_metric(struct task *task, struct metric *metric);
+extern int lmap_task_add_registry(struct task *task, struct registry *registry);
 extern int lmap_task_set_program(struct task *task, const char *value);
 extern int lmap_task_add_option(struct task *task, struct option *option);
 extern int lmap_task_add_tag(struct task *task, const char *value);

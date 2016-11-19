@@ -767,37 +767,37 @@ int lmap_agent_set_last_started(struct agent *agent, const char *value)
 }
 
 /*
- * struct metric functions...
+ * struct registry functions...
  */
 
-struct metric *
-lmap_metric_new()
+struct registry *
+lmap_registry_new()
 {
-    struct metric *metric;
+    struct registry *registry;
 
-    metric = (struct metric*) xcalloc(1, sizeof(struct metric), __FUNCTION__);
-    return metric;
+    registry = (struct registry*) xcalloc(1, sizeof(struct registry), __FUNCTION__);
+    return registry;
 }
 
 void
-lmap_metric_free(struct metric *metric)
+lmap_registry_free(struct registry *registry)
 {
-    if (metric) {
-	xfree(metric->uri);
-	free_all_tags(metric->roles);
-	xfree(metric);
+    if (registry) {
+	xfree(registry->uri);
+	free_all_tags(registry->roles);
+	xfree(registry);
     }
 }
 
 int
-lmap_metric_valid(struct lmap *lmap, struct metric *metric)
+lmap_registry_valid(struct lmap *lmap, struct registry *registry)
 {
     int valid = 1;
 
     UNUSED(lmap);
 
-    if (! metric->uri) {
-	lmap_err("metric requires a uri");
+    if (! registry->uri) {
+	lmap_err("registry requires a uri");
 	valid = 0;
     }
 
@@ -805,16 +805,16 @@ lmap_metric_valid(struct lmap *lmap, struct metric *metric)
 }
 
 int
-lmap_metric_set_uri(struct metric *metric, const char *value)
+lmap_registry_set_uri(struct registry *registry, const char *value)
 {
-    return set_string(&metric->uri, value, __FUNCTION__);
+    return set_string(&registry->uri, value, __FUNCTION__);
 }
 
 int
-lmap_metric_add_role(struct metric *metric, const char *value)
+lmap_registry_add_role(struct registry *registry, const char *value)
 {
 
-    return add_tag(&metric->roles, value, __FUNCTION__);
+    return add_tag(&registry->roles, value, __FUNCTION__);
 }
 
 /*
@@ -1483,10 +1483,10 @@ lmap_task_free(struct task *task)
 {
     if (task) {
 	xfree(task->name);
-	while (task->metrics) {
-	    struct metric *old = task->metrics;
-	    task->metrics = task->metrics->next;
-	    lmap_metric_free(old);
+	while (task->registries) {
+	    struct registry *old = task->registries;
+	    task->registries = task->registries->next;
+	    lmap_registry_free(old);
 	}
 	xfree(task->program);
 	free_all_options(task->options);
@@ -1531,27 +1531,27 @@ lmap_task_set_program(struct task *task, const char *value)
 }
 
 int
-lmap_task_add_metric(struct task *task, struct metric *metric)
+lmap_task_add_registry(struct task *task, struct registry *registry)
 {
-    struct metric **tail = &task->metrics;
-    struct metric *cur;
+    struct registry **tail = &task->registries;
+    struct registry *cur;
 
-    if (! metric->uri) {
-	lmap_err("unnamed metric");
+    if (! registry->uri) {
+	lmap_err("unnamed registry");
 	return -1;
     }
 
     while (*tail != NULL) {
 	cur = *tail;
 	if (cur) {
-	    if (! strcmp(cur->uri, metric->uri)) {
-		lmap_err("duplicate metric '%s'", metric->uri);
+	    if (! strcmp(cur->uri, registry->uri)) {
+		lmap_err("duplicate registry '%s'", registry->uri);
 		return -1;
 	    }
 	}
 	tail = &((*tail)->next);
     }
-    *tail = metric;
+    *tail = registry;
 
     return 0;
 }
