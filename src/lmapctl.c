@@ -30,6 +30,7 @@
 #include <limits.h>
 #include <ftw.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include "lmap.h"
 #include "lmapd.h"
@@ -438,6 +439,7 @@ status_cmd(int argc, char *argv[])
 {
     struct lmap *lmap = NULL;
     pid_t pid;
+    struct timespec tp = { .tv_sec = 0, .tv_nsec = 87654321 };
     
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
@@ -455,7 +457,12 @@ status_cmd(int argc, char *argv[])
 	lmap_err("failed to send SIGUSR1 to process %d", pid);
 	return 1;
     }
-    (void) usleep(4321);
+    /*
+     * I should do something more intelligent here, e.g., wait unti
+     * the state file is available with a matching touch date and
+     * nobody is writing it (i.e., obtain an exclusing open).
+     */
+    (void) nanosleep(&tp, NULL);
 
     if (read_state(lmapd) != 0) {
 	return 1;
@@ -470,6 +477,14 @@ status_cmd(int argc, char *argv[])
 	struct capability *cap = lmap->capabilities;
 	printf("agent-id:     %s\n", agent->agent_id);
 	printf("version:      %s\n", cap ? cap->version : "<?>");
+	if (cap && cap->tags) {
+	    struct tag *tag;
+	    printf("tags:         ");
+	    for (tag = cap->tags; tag; tag = tag->next) {
+		printf("%s%s", tag == cap->tags ? "" : ", ", tag->tag);
+	    }
+	    printf("\n");
+	}
 	printf("last-started: %s\n",
 	       render_datetime_long(&agent->last_started));
 	printf("\n");

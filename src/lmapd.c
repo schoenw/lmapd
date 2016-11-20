@@ -151,11 +151,15 @@ read_config(struct lmapd *lmapd)
 	lmapd->lmap->agent->last_started = time(NULL);
     }
 
+    if (!lmapd->lmap->capabilities) {
+	lmapd->lmap->capabilities = lmap_capability_new();
+    }
     if (lmapd->lmap->capabilities) {
 	char buf[256];
 	snprintf(buf, sizeof(buf), "%s version %d.%d", LMAPD_LMAPD,
 		 LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
 	lmap_capability_set_version(lmapd->lmap->capabilities, buf);
+	lmap_capability_add_system_tags(lmapd->lmap->capabilities);
     }
 
     return 0;

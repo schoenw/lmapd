@@ -807,6 +807,28 @@ lmap_capability_add_tag(struct capability *capability, const char *value)
     return add_tag(&capability->tags, value, __FUNCTION__);
 }
 
+void
+lmap_capability_add_system_tags(struct capability *capability)
+{
+    int fd;
+
+    if (! capability) {
+	return;
+    }
+
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd != -1) {
+	(void) close(fd);
+	lmap_capability_add_tag(capability, "system-ipv4-capable");
+    }
+
+    fd = socket(AF_INET6, SOCK_STREAM, 0);
+    if (fd != -1) {
+	(void) close(fd);
+	lmap_capability_add_tag(capability, "system-ipv6-capable");
+    }
+}
+
 /*
  * struct registry functions...
  */

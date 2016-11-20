@@ -108,6 +108,7 @@ extern int lmap_capability_valid(struct lmap *lmap, struct capability *capabilit
 extern int lmap_capability_add_task(struct capability *capabilities, struct task *task);
 extern int lmap_capability_set_version(struct capability *capabilities, const char *value);
 extern int lmap_capability_add_tag(struct capability *capability, const char *value);
+extern void lmap_capability_add_system_tags(struct capability *capability);
 
 /**
  * A struct suppression is used to hold all config and state
