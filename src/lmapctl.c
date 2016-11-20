@@ -15,7 +15,7 @@
  * along with lmapd. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _XOPEN_SOURCE 500
+#define _POSIX_C_SOURCE 200112L
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +29,7 @@
 #include <signal.h>
 #include <limits.h>
 #include <ftw.h>
+#include <inttypes.h>
 
 #include "lmap.h"
 #include "lmapd.h"
@@ -88,53 +89,6 @@ vlog(int level, const char *func, const char *format, va_list args)
     fprintf(stderr, "\n");
 }
 
-#if 0
-static unsigned long du_cnt = 0;
-static unsigned long du_size = 0;
-static unsigned long du_blocks = 0;
-
-static int
-du_cb(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
-{
-    if (tflag == FTW_F) {
-	du_size += sb->st_size;
-	du_blocks += sb->st_blocks;
-	du_cnt++;
-    }
-    return 0;           /* To tell nftw() to continue */
-}
-
-
-static char *
-du(char *path)
-{
-    static char buf[127];
-
-    du_cnt = 0;
-    du_size = 0;
-    du_blocks = 0;
-    if (nftw(path, du_cb, 6, 0) == -1) {
-	return "???";
-    }
-#if 0
-    lmap_dbg("blocks = %lu size = %lu, count = %lu, avg = %lu",
-	     du_blocks * 512, du_size, du_cnt, du_cnt ? du_size/du_cnt : 0);
-#endif
-    du_size = du_blocks * 512;
-
-    if (du_size/1024/1024 > 9999) {
-	snprintf(buf, sizeof(buf), "%luG", ((du_size/1024/1024)+512)/1014);
-    } else if (du_size/1024 > 9999) {
-	snprintf(buf, sizeof(buf), "%luM", ((du_size/1024)+512)/1024);
-    } else if (du_size > 9999) {
-	snprintf(buf, sizeof(buf), "%luK", (du_size+512)/1024);
-    } else {
-	snprintf(buf, sizeof(buf), "%lu", du_size);
-    }
-    return buf;
-}
-#endif
-
 static void
 usage(FILE *f)
 {
@@ -186,13 +140,16 @@ render_storage(uint64_t storage)
     static char buf[127];
 
     if (storage/1024/1024 > 9999) {
-	snprintf(buf, sizeof(buf), "%luG", ((storage/1024/1024)+512)/1014);
+	snprintf(buf, sizeof(buf), "%" PRIu64 "G",
+		 ((storage/1024/1024)+512)/1014);
     } else if (storage/1024 > 9999) {
-	snprintf(buf, sizeof(buf), "%luM", ((storage/1024)+512)/1024);
+	snprintf(buf, sizeof(buf), "%" PRIu64 "M",
+		 ((storage/1024)+512)/1024);
     } else if (storage > 9999) {
-	snprintf(buf, sizeof(buf), "%luK", (storage+512)/1024);
+	snprintf(buf, sizeof(buf), "%" PRIu64 "K",
+		 (storage+512)/1024);
     } else {
-	snprintf(buf, sizeof(buf), "%lu", storage);
+	snprintf(buf, sizeof(buf), "%" PRIu64, storage);
     }
     return buf;
 }
