@@ -1,5 +1,6 @@
 module ietf-lmap-report {
 
+  yang-version 1.1;
   namespace "urn:ietf:params:xml:ns:yang:ietf-lmap-report";
   prefix "lmapr";
   
@@ -29,7 +30,7 @@ module ietf-lmap-report {
      Platform (LMAP), to result data collectors. This data model is
      expected to be implemented by a collector.";
   
-  revision "2016-11-18" {
+  revision "2016-11-20" {
     description
       "Initial version";
     reference
@@ -100,7 +101,7 @@ module ietf-lmap-report {
           description
             "This container is a place-holder for run-time 
              parameters defined in task-specific data models
-	     augmenting the base lmap report data model.";
+             augmenting the base lmap report data model.";
                
           choice extension {
             description
@@ -109,7 +110,7 @@ module ietf-lmap-report {
           }
         }
         
-        uses lmap:task-options-grouping {
+        uses lmap:options-grouping {
           description
             "The list of options there were in use then the
               measurement was performed. This list must include

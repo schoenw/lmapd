@@ -1,5 +1,6 @@
 module ietf-lmap-control {
 
+  yang-version 1.1;
   namespace "urn:ietf:params:xml:ns:yang:ietf-lmap-control";
   prefix "lmapc";
   
@@ -32,7 +33,7 @@ module ietf-lmap-control {
      (LMAP). This data model is expected to be implemented by a
      measurement agent.";
   
-  revision "2016-11-18" {
+  revision "2016-11-20" {
     description
       "Initial version";
     reference
@@ -74,25 +75,25 @@ module ietf-lmap-control {
    * Groupings
    */
   
-  grouping timing-start-end-grouping {
+  grouping start-end-grouping {
     description
-      "A grouping that provides start and end times for 
-       timing objects.";
+      "A grouping that provides start and end times for
+       event objects.";
     leaf start {
       type yang:date-and-time;
       description
-        "The date and time when the timing object
+        "The date and time when the event object
          starts to create triggers.";
     }
     leaf end {
       type yang:date-and-time;
       description
-        "The date and time when the timing object
+        "The date and time when the event object
          stops to create triggers.
 
          It is generally a good idea to always configure
          an end time and to refresh the configuration
-         of timing object as needed to ensure that agents
+         of event object as needed to ensure that agents
          that loose connectivity to their controller
          do not continue their tasks forever.";
     }
@@ -193,6 +194,68 @@ module ietf-lmap-control {
            raised indicating that connectivity to the controller
            has been lost.";
       }
+
+      leaf last-started {
+        type yang:date-and-time;
+        config false;
+        mandatory true;
+        description
+          "The date and time the measurement agent last started.";
+      }
+    }
+    
+    container capabilities {
+      config false;
+      description
+        "Capabilities such as available LMAP tasks.";
+      
+      leaf version {
+        type string;
+        config false;
+        mandatory true;
+        description
+          "A short description of the software implementing the
+           measurement agent. This should include the version
+           number of the measurement agent software.";
+      }
+      
+      leaf-list tag {
+        type lmap:tag;
+        config false;
+        description
+          "An optional unordered set of tags that provide 
+           additional information about the capabilities of 
+           the measurement agent.";
+      }
+      
+      list task {
+        key name;
+        description
+          "The list of tasks available on the LMAP agent.";
+        
+        leaf name {
+          type lmap:identifier;
+          description
+            "The unique name of a task.";
+        }
+
+        uses lmap:registry-grouping;
+
+        leaf version {
+          type string;
+          description
+            "A short description of the software implementing
+             the task. This should include the version
+             number of the measurement task software.";
+        }
+        
+        leaf program {
+          type string;
+          description
+            "The (local) program to invoke in order to execute
+             the task.";
+        }
+      }
     }
     
     /*
@@ -226,7 +289,7 @@ module ietf-lmap-control {
              the registry information present.";
         }
 
-        uses lmap:task-options-grouping {
+        uses lmap:options-grouping {
           description
             "The list of task specific options.";
         }
@@ -339,6 +402,98 @@ module ietf-lmap-control {
              schedules to be suppressed.";
         }
 
+        leaf state {
+          type enumeration {
+            enum enabled {
+              value 1;
+              description
+                "The value 'enabled' indicates that the 
+                 schedule is currently enabled.";
+            }
+            enum disabled {
+              value 2;
+              description
+                "The value 'disabled' indicates that the 
+                 schedule is currently disabled.";
+            }
+            enum running {
+              value 3;
+              description
+                "The value 'running' indicates that the
+                 schedule is currently running.";
+            }
+            enum suppressed {
+              value 4;
+              description
+                "The value 'suppressed' indicates that the
+                 schedule is currently suppressed.";
+            }
+          }
+          config false;
+          mandatory true;
+          description
+            "The current state of the schedule.";
+        }
+
+        leaf storage {
+          type yang:gauge64;
+          units "bytes";
+          config false;
+          mandatory true;
+          description
+            "The amount of secondary storage (e.g., allocated in a 
+             file system) holding temporary data allocated to the
+             schedule in bytes. This object reports the amount of
+             allocated physical storage and not the storage used 
+             by logical data records.";
+        }
+
+        leaf invocations {
+          type yang:counter32;
+          config false;
+          mandatory true;
+          description
+            "Number of invocations of this schedule. This counter
+             does not include suppressed invocations or invocations
+             that were prevented due to an overlap with a previous
+             invocation of this schedule.";
+        }
+
+        leaf suppressions {
+          type yang:counter32;
+          config false;
+          mandatory true;
+          description
+            "Number of suppressed executions of this schedule.";
+        }
+
+        leaf overlaps {
+          type yang:counter32;
+          config false;
+          mandatory true;
+          description
+            "Number of executions prevented due to overlaps with
+             a previous invocation of this schedule.";
+        }
+
+        leaf failures {
+          type yang:counter32;
+          config false;
+          mandatory true;
+          description
+            "Number of failed executions of this schedule. A 
+             failed execution is an execution where at least
+             one action failed.";
+        }
+
+        leaf last-invocation {
+          type yang:date-and-time;
+          config false;
+          description
+            "The date and time of the last invocation of
+             this schedule.";
+        }
+
         list action {
           key name;
           description
@@ -362,7 +517,7 @@ module ietf-lmap-control {
             description
               "This container is a place-holder for run-time 
                parameters defined in task-specific data models
-	       augmenting the base lmap control data model.";
+               augmenting the base lmap control data model.";
                
             choice extension {
               description
@@ -371,7 +526,7 @@ module ietf-lmap-control {
             }
           }
         
-          uses lmap:task-options-grouping {
+          uses lmap:options-grouping {
             description
               "The list of action specific options that are 
                appended to the list of task specific options.";
@@ -405,6 +560,151 @@ module ietf-lmap-control {
             description
               "A set of suppression tags that are used to select
                actions to be suppressed.";
+          }
+
+          leaf state {
+            type enumeration {
+              enum enabled {
+                value 1;
+                description
+                  "The value 'enabled' indicates that the 
+                   action is currently enabled.";
+              }
+              enum disabled {
+                value 2;
+                description
+                  "The value 'disabled' indicates that the 
+                   action is currently disabled.";
+              }
+              enum running {
+                value 3;
+                description
+                  "The value 'running' indicates that the 
+                   action is currently runnning.";
+              }
+              enum suppressed {
+                value 4;
+                description
+                  "The value 'suppressed' indicates that the
+                   action is currently suppressed.";
+              }
+            }
+            config false;
+            mandatory true;
+            description
+              "The current state of the action.";
+          }
+
+          leaf storage {
+            type yang:gauge64;
+            units "bytes";
+            config false;
+            mandatory true;
+            description
+              "The amount of secondary storage (e.g., allocated in a
+               file system) holding temporary data allocated to the
+               schedule in bytes. This object reports the amount of
+               allocated physical storage and not the storage used
+               by logical data records.";
+          }
+
+          leaf invocations {
+            type yang:counter32;
+            config false;
+            mandatory true;
+            description
+              "Number of invocations of this action. This counter
+               does not include suppressed invocations or invocations
+               that were prevented due to an overlap with a previous
+               invocation of this action.";
+          }
+
+          leaf suppressions {
+            type yang:counter32;
+            config false;
+            mandatory true;
+            description
+              "Number of suppressed executions of this action.";
+          }
+
+          leaf overlaps {
+            type yang:counter32;
+            config false;
+            mandatory true;
+            description
+              "Number of executions prevented due to overlaps with
+               a previous invocation of this action.";
+          }
+
+          leaf failures {
+            type yang:counter32;
+            config false;
+            mandatory true;
+            description
+              "Number of failed executions of this action.";
+          }
+
+          leaf last-invocation {
+            type yang:date-and-time;
+            config false;
+            mandatory true;
+            description
+              "The date and time of the last invocation of
+               this action.";
+          }
+
+          leaf last-completion {
+            type yang:date-and-time;
+            config false;
+            mandatory true;
+            description
+              "The date and time of the last completion of
+               this action.";
+          }
+
+          leaf last-status {
+            type lmap:status-code;
+            config false;
+            mandatory true;
+            description
+              "The status code returned by the last execution of
+               this action.";
+          }
+
+          leaf last-message {
+            type string;
+            config false;
+            mandatory true;
+            description
+              "The status message produced by the last execution
+               of this action.";
+          }
+
+          leaf last-failed-completion {
+            type yang:date-and-time;
+            config false;
+            mandatory true;
+            description
+              "The date and time of the last failed completion
+               of this action.";
+          }
+
+          leaf last-failed-status {
+            type lmap:status-code;
+            config false;
+            mandatory true;
+            description
+              "The status code returned by the last failed
+               execution of this action.";
+          }
+
+          leaf last-failed-message {
+            type string;
+            config false;
+            mandatory true;
+            description
+              "The status message produced by the last failed
+               execution of this action.";
           }
         }
       }
@@ -466,6 +766,33 @@ module ietf-lmap-control {
              false, running schedules and actions will not be
              affected if suppression is activated.";
         }
+
+        leaf state {
+          type enumeration {
+            enum enabled {
+              value 1;
+              description
+                "The value 'enabled' indicates that the 
+                 suppression is currently enabled.";
+            }
+            enum disabled {
+              value 2;
+              description
+                "The value 'disabled' indicates that the 
+                 suppression is currently disabled.";
+            }
+            enum active {
+              value 3;
+              description
+                "The value 'active' indicates that the
+                 suppression is currently active.";
+            }
+          }
+          config false;
+          mandatory true;
+          description
+            "The current state of the suppression.";
+        }
       }
     }
     
@@ -495,6 +822,27 @@ module ietf-lmap-control {
             "The unique name of an event source.";
         }
         
+        leaf random-spread {
+          type uint32;
+          units seconds;
+          description
+            "This optional leaf adds a random spread to the
+             computation of the event's trigger time. The 
+             random spread is a uniformly distributed random 
+             number taken from the interval [0:random-spread].";
+        }
+
+        leaf cycle-interval {
+          type uint32;
+          units seconds;
+          description
+            "The optional cycle-interval defines the duration
+             of the time interval in seconds that is used to
+             calculate cycle numbers. No cycle number is
+             calculated if the optional cycle-interval does
+             not exist.";
+        }
+        
         choice event-type {
           description
             "Different types of events are handled by
@@ -517,7 +865,7 @@ module ietf-lmap-control {
                   "The number of seconds between two triggers
                    generated by this periodic timing object.";
               }
-              uses timing-start-end-grouping;
+              uses start-end-grouping;
             }
           }
           
@@ -585,7 +933,7 @@ module ietf-lmap-control {
                    object will be evaluated. If not present,
                    the systems' local timezone will be used.";
               }
-              uses timing-start-end-grouping;
+              uses start-end-grouping;
             }
           }
           
@@ -648,382 +996,6 @@ module ietf-lmap-control {
           }
         }
         
-        leaf random-spread {
-          type uint32;
-          units seconds;
-          description
-            "This optional leaf adds a random spread to the
-             computation of the event's trigger time. The 
-             random spread is a uniformly distributed random 
-             number taken from the interval [0:random-spread].";
-        }
-
-        leaf cycle-interval {
-          type uint32;
-          units seconds;
-          description
-            "The optional cycle-interval defines the duration
-             of the time interval in seconds that is used to
-             calculate cycle numbers. No cycle number is
-             calculated if the optional cycle-interval does
-             not exist.";
-        }
-      }
-    }
-  }
-
-  /*
-   * The state subtree provides information about the capabilities
-   * and the current status of the MA.
-   */
-  
-  container lmap-state {
-    config false;
-    description
-      "A tree exporting state information about the LMAP agent.";
-    
-    container agent {
-      description
-        "Operations state of the measurement agent.";
-
-      leaf agent-id {
-        type yang:uuid;
-        description
-          "The agent-id identifies a measurement agent with
-           a very low probability of collision. In certain
-           deployments, the agent-id may be considered 
-           sensitive and hence this object is optional.";
-      }
-
-      leaf version {
-        type string;
-        mandatory true;
-        description
-          "A short description of the software implementing the
-           measurement agent. This should include the version
-           number of the measurement agent software.";
-      }
-      
-      leaf-list tag {
-        type lmap:tag;
-        description
-          "An optional unordered set of tags that provide 
-           additional information about the capabilities of 
-           the measurement agent.";
-      }
-      
-      leaf last-started {
-        type yang:date-and-time;
-        mandatory true;
-        description
-          "The date and time the measurement agent last started.";
-      }
-    }
-
-    container tasks {
-      description
-        "Available LMAP tasks, including information about their
-         last execution and their last failed execution.";
-      
-      list task {
-        key name;
-        description
-          "The list of tasks available on the LMAP agent.";
-        
-        leaf name {
-          type lmap:identifier;
-          description
-            "The unique name of a task.";
-        }
-
-        uses lmap:registry-grouping;
-
-        leaf version {
-          type string;
-          description
-            "A short description of the software implementing
-             the task. This should include the version
-             number of the measurement task software.";
-        }
-        
-        leaf program {
-          type string;
-          description
-            "The (local) program to invoke in order to execute
-             the task.";
-        }
-      }
-    }
-    
-    container schedules {
-      description
-        "State of LMAP schedules.";
-
-      list schedule {
-        key name;
-        description
-          "State of a particular schedule.";
-
-        leaf name {
-          type lmap:identifier;
-          description
-            "The locally-unique, administratively assigned name
-             for this schedule.";
-        }
-
-        leaf state {
-          type enumeration {
-            enum enabled {
-              value 1;
-              description
-                "The value 'enabled' indicates that the 
-                 schedule is currently enabled.";
-            }
-            enum disabled {
-              value 2;
-              description
-                "The value 'disabled' indicates that the 
-                 schedule is currently disabled.";
-            }
-            enum running {
-              value 3;
-              description
-                "The value 'running' indicates that the
-                 schedule is currently running.";
-            }
-            enum suppressed {
-              value 4;
-              description
-                "The value 'suppressed' indicates that the
-                 schedule is currently suppressed.";
-            }
-          }
-          description
-            "The current state of the schedule.";
-        }
-
-        leaf storage {
-          type yang:gauge64;
-          units "bytes";
-          description
-            "The amount of secondary storage (e.g., allocated in a 
-             file system) holding temporary data allocated to the
-             schedule in bytes. This object reports the amount of
-             allocated physical storage and not the storage used 
-             by logical data records.";
-        }
-
-        leaf invocations {
-          type yang:counter32;
-          description
-            "Number of invocations of this schedule. This counter
-             does not include suppressed invocations or invocations
-             that were prevented due to an overlap with a previous
-             invocation of this schedule.";
-        }
-
-        leaf suppressions {
-          type yang:counter32;
-          description
-            "Number of suppressed executions of this schedule.";
-        }
-
-        leaf overlaps {
-          type yang:counter32;
-          description
-            "Number of executions prevented due to overlaps with
-             a previous invocation of this schedule.";
-        }
-
-        leaf failures {
-          type yang:counter32;
-          description
-            "Number of failed executions of this schedule. A 
-             failed execution is an execution where at least
-             one action failed.";
-        }
-
-        leaf last-invocation {
-          type yang:date-and-time;
-          description
-            "The date and time of the last invocation of
-             this schedule.";
-        }
-
-        list action {
-          key name;
-          description
-            "The state of the actions associated with this 
-             schedule entry.";
-
-          leaf name {
-            type lmap:identifier;
-            description
-              "The unique identifier for this action.";
-          }
-
-          leaf state {
-            type enumeration {
-              enum enabled {
-                value 1;
-                description
-                  "The value 'enabled' indicates that the 
-                   action is currently enabled.";
-              }
-              enum disabled {
-                value 2;
-                description
-                  "The value 'disabled' indicates that the 
-                   action is currently disabled.";
-              }
-              enum running {
-                value 3;
-                description
-                  "The value 'running' indicates that the 
-                   action is currently runnning.";
-              }
-              enum suppressed {
-                value 4;
-                description
-                  "The value 'suppressed' indicates that the
-                   action is currently suppressed.";
-              }
-            }
-            description
-              "The current state of the action.";
-          }
-
-          leaf storage {
-            type yang:gauge64;
-            units "bytes";
-            description
-              "The amount of secondary storage (e.g., allocated in a
-               file system) holding temporary data allocated to the
-               schedule in bytes. This object reports the amount of
-               allocated physical storage and not the storage used
-               by logical data records.";
-          }
-
-          leaf invocations {
-            type yang:counter32;
-            description
-              "Number of invocations of this action. This counter
-               does not include suppressed invocations or invocations
-               that were prevented due to an overlap with a previous
-               invocation of this action.";
-          }
-
-          leaf suppressions {
-            type yang:counter32;
-            description
-              "Number of suppressed executions of this action.";
-          }
-
-          leaf overlaps {
-            type yang:counter32;
-            description
-              "Number of executions prevented due to overlaps with
-               a previous invocation of this action.";
-          }
-
-          leaf failures {
-            type yang:counter32;
-            description
-              "Number of failed executions of this action.";
-          }
-
-          leaf last-invocation {
-            type yang:date-and-time;
-            description
-              "The date and time of the last invocation of
-               this action.";
-          }
-
-          leaf last-completion {
-            type yang:date-and-time;
-            description
-              "The date and time of the last completion of
-               this action.";
-          }
-
-          leaf last-status {
-            type lmap:status-code;
-            description
-              "The status code returned by the last execution of
-               this action.";
-          }
-
-          leaf last-message {
-            type string;
-            description
-              "The status message produced by the last execution
-               of this action.";
-          }
-
-          leaf last-failed-completion {
-            type yang:date-and-time;
-            description
-              "The date and time of the last failed completion
-               of this action.";
-          }
-
-          leaf last-failed-status {
-            type lmap:status-code;
-            description
-              "The status code returned by the last failed
-               execution of this action.";
-          }
-
-          leaf last-failed-message {
-            type string;
-            description
-              "The status message produced by the last failed
-               execution of this action.";
-          }
-        }
-      }
-    }
-
-    container suppressions {
-      description
-        "State of LMAP suppressions.";
-
-      list suppression {
-        key name;
-        description
-          "State of a particular suppression.";
-
-        leaf name {
-          type lmap:identifier;
-          description
-            "The locally-unique, administratively assigned name
-             for this suppression.";
-        }
-
-        leaf state {
-          type enumeration {
-            enum enabled {
-              value 1;
-              description
-                "The value 'enabled' indicates that the 
-                 suppression is currently enabled.";
-            }
-            enum disabled {
-              value 2;
-              description
-                "The value 'disabled' indicates that the 
-                 suppression is currently disabled.";
-            }
-            enum active {
-              value 3;
-              description
-                "The value 'active' indicates that the
-                 suppression is currently active.";
-            }
-          }
-          description
-            "The current state of the suppression.";
-        }
       }
     }
   }

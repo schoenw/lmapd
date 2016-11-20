@@ -1,5 +1,6 @@
 module ietf-lmap-common {
 
+  yang-version 1.1;
   namespace "urn:ietf:params:xml:ns:yang:ietf-lmap-common";
   prefix "lmap";
   
@@ -26,7 +27,7 @@ module ietf-lmap-common {
      This module defines typedefs and groupings but no schema
      tree elements.";
   
-  revision "2016-11-18" {
+  revision "2016-11-20" {
     description
       "Initial version";
     reference
@@ -322,7 +323,7 @@ module ietf-lmap-common {
       "This grouping models a list of entries in a registry
        that identify functions of a tasks.";
 
-    list metric {
+    list function {
       key uri;
       description
         "A list of entries in a registry identifying functions.";
@@ -341,7 +342,7 @@ module ietf-lmap-common {
     }
   }
 
-  grouping task-options-grouping {
+  grouping options-grouping {
     description
       "A list of options of a task. Each option is a name/value
        pair (where the value may be absent).";

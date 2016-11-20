@@ -77,11 +77,14 @@ $ genhtml app.info
 ### Todo's
 
  - Fix lmapctl timezone bug
+ - Implement capabilities/task
+ - Implement cycle-number
  - Implement schedule/duration
  - Implement calendar/timezone-offset
  - Implement suppression/suppress-by-default
  - Implement pipelined execution mode
  - Unify the reporting of measurement results
+ - Store action meta-data in a key: value format instead of a csv format
 
 
 ### Acknowledgments
@@ -93,8 +96,8 @@ The following people have helped with suggestions and ideas:
 - Roxana Nadrag
 - Alexandru Barbarosie
 
-Development of this code was kindly supported by the EU FP7 Leone and
-Flamingo research projects.
+Development of this code was kindly supported by the EU FP7 [Leone] and
+[Flamingo] research projects.
 
 ### License
 

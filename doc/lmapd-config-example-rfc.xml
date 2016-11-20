@@ -106,10 +106,10 @@
       <task>
         <name>ippm-udp-latency-client</name>
         <program>/usr/bin/ippm-udp-latency</program>
-        <metric>
+        <function>
           <uri>urn:example:tbd</uri>
           <role>client</role>
-        </metric>
+        </function>
         <tag>active</tag>
       </task>
     </tasks>
@@ -119,12 +119,12 @@
            with a random spread of one minute. -->
       <event>
         <name>E1</name>
+        <random-spread>60</random-spread>   <!-- seconds -->
         <periodic>
           <interval>3600000</interval>
           <start>2016-09-01T00:00:00+00:00</start>
           <end>2016-11-01T00:00:00+00:00</end>
         </periodic>
-        <random-spread>60</random-spread>   <!-- seconds -->
       </event>
       <!-- The event E2 triggers on Mondays at 4am UTC -->
       <event>
