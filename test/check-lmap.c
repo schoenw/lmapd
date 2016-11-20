@@ -616,7 +616,6 @@ START_TEST(test_parser_config_suppressions)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:suppressions>\n"
         "      <lmapc:suppression>\n"
         "        <lmapc:name>foo</lmapc:name>\n"
@@ -661,11 +660,11 @@ START_TEST(test_parser_config_tasks)
         "        <lmapc:name>foo</lmapc:name>"
         "        <name>bar</name>"
         "        <x:name>baz</x:name>"
-	"        <lmapc:registry>"
+	"        <lmapc:function>"
 	"          <lmapc:uri>urn:example</lmapc:uri>"
 	"          <lmapc:role>client</lmapc:role>"
 	"          <lmapc:role>server</lmapc:role>"
-	"        </lmapc:registry>"
+	"        </lmapc:function>"
 	"        <lmapc:program>noop</lmapc:program>"
 	"        <lmapc:option>"
 	"          <lmapc:id>numeric</lmapc:id>"
@@ -685,15 +684,14 @@ START_TEST(test_parser_config_tasks)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:tasks>\n"
         "      <lmapc:task>\n"
         "        <lmapc:name>foo</lmapc:name>\n"
-	"        <lmapc:registry>\n"
+	"        <lmapc:function>\n"
 	"          <lmapc:uri>urn:example</lmapc:uri>\n"
 	"          <lmapc:role>client</lmapc:role>\n"
 	"          <lmapc:role>server</lmapc:role>\n"
-	"        </lmapc:registry>\n"
+	"        </lmapc:function>\n"
         "        <lmapc:program>noop</lmapc:program>\n"
 	"        <lmapc:option>\n"
 	"          <lmapc:id>numeric</lmapc:id>\n"
@@ -746,12 +744,12 @@ START_TEST(test_parser_config_events)
         "      </lmapc:event>"
         "      <lmapc:event>"
         "        <lmapc:name>periodic</lmapc:name>"
+        "        <lmapc:random-spread>300000</lmapc:random-spread>"
         "        <lmapc:periodic>"
         "          <lmapc:interval>4321</lmapc:interval>"
         "          <lmapc:start>2015-02-01T17:44:21+02:00</lmapc:start>"
         "          <lmapc:end>2015-03-01T00:00:00+00:00</lmapc:end>"
         "        </lmapc:periodic>"
-        "        <lmapc:random-spread>300000</lmapc:random-spread>"
         "      </lmapc:event>"
         "      <lmapc:event>"
         "        <lmapc:name>once</lmapc:name>"
@@ -782,19 +780,18 @@ START_TEST(test_parser_config_events)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:events>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>foo</lmapc:name>\n"
         "      </lmapc:event>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>periodic</lmapc:name>\n"
+        "        <lmapc:random-spread>300000</lmapc:random-spread>\n"
         "        <lmapc:periodic>\n"
         "          <lmapc:interval>4321</lmapc:interval>\n"
         "          <lmapc:start>2015-02-01T15:44:21+00:00</lmapc:start>\n"
         "          <lmapc:end>2015-03-01T00:00:00+00:00</lmapc:end>\n"
         "        </lmapc:periodic>\n"
-        "        <lmapc:random-spread>300000</lmapc:random-spread>\n"
         "      </lmapc:event>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>once</lmapc:name>\n"
@@ -882,7 +879,6 @@ START_TEST(test_parser_config_events_calendar0)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:events>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>monthly</lmapc:name>\n"
@@ -972,7 +968,6 @@ START_TEST(test_parser_config_events_calendar1)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:events>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>daily</lmapc:name>\n"
@@ -1065,7 +1060,6 @@ START_TEST(test_parser_config_events_calendar2)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:events>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>hourly-on-weekends</lmapc:name>\n"
@@ -1156,7 +1150,6 @@ START_TEST(test_parser_config_events_calendar3)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:events>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>dec-31-11.00</lmapc:name>\n"
@@ -1249,7 +1242,6 @@ START_TEST(test_parser_config_schedules)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:schedules>\n"
         "      <lmapc:schedule>\n"
         "        <lmapc:name>foo</lmapc:name>\n"
@@ -1342,7 +1334,6 @@ START_TEST(test_parser_config_actions)
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<config xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
         "  <lmapc:lmap>\n"
-        "    <lmapc:agent/>\n"
         "    <lmapc:schedules>\n"
         "      <lmapc:schedule>\n"
         "        <lmapc:name>foo</lmapc:name>\n"
@@ -1425,12 +1416,12 @@ START_TEST(test_parser_config_merge)
         "    <lmapc:events>"
         "      <lmapc:event>"
         "        <lmapc:name>periodic</lmapc:name>"
+        "        <lmapc:random-spread>300000</lmapc:random-spread>"
         "        <lmapc:periodic>"
         "          <lmapc:interval>4321</lmapc:interval>"
         "          <lmapc:start>2015-02-01T17:44:21+02:00</lmapc:start>"
         "          <lmapc:end>2015-03-01T00:00:00+00:00</lmapc:end>"
         "        </lmapc:periodic>"
-        "        <lmapc:random-spread>300000</lmapc:random-spread>"
         "      </lmapc:event>"
         "    </lmapc:events>"
         "  </lmapc:lmap>"
@@ -1452,12 +1443,12 @@ START_TEST(test_parser_config_merge)
         "    <lmapc:events>\n"
         "      <lmapc:event>\n"
         "        <lmapc:name>periodic</lmapc:name>\n"
+        "        <lmapc:random-spread>300000</lmapc:random-spread>\n"
         "        <lmapc:periodic>\n"
         "          <lmapc:interval>4321</lmapc:interval>\n"
         "          <lmapc:start>2015-02-01T15:44:21+00:00</lmapc:start>\n"
         "          <lmapc:end>2015-03-01T00:00:00+00:00</lmapc:end>\n"
         "        </lmapc:periodic>\n"
-        "        <lmapc:random-spread>300000</lmapc:random-spread>\n"
         "      </lmapc:event>\n"
         "    </lmapc:events>\n"
         "  </lmapc:lmap>\n"
@@ -1492,26 +1483,74 @@ START_TEST(test_parser_state_agent)
     const char *a =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">"
-        "  <lmapc:lmap-state xmlns:x=\"urn:example\">"
+        "  <lmapc:lmap xmlns:x=\"urn:example\">"
         "    <lmapc:agent>"
 	"      <lmapc:agent-id>550e8400-e29b-41d4-a716-446655440000</lmapc:agent-id>"
 	"      <lmapc:agent-id>550e8400-e29b-41d4-a716-446655440000</lmapc:agent-id>"
-    	"      <lmapc:device-id>urn:dev:mac:0024befffe804ff1</lmapc:device-id>"
 	"      <lmapc:version>lmap version 0.3</lmapc:version>"
 	"      <lmapc:last-started>2016-02-21T22:13:40+01:00</lmapc:last-started>"
         "    </lmapc:agent>"
-        "  </lmapc:lmap-state>"
+        "  </lmapc:lmap>"
         "</data>";
     const char *x =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
-        "  <lmapc:lmap-state>\n"
+        "  <lmapc:lmap>\n"
         "    <lmapc:agent>\n"
 	"      <lmapc:agent-id>550e8400-e29b-41d4-a716-446655440000</lmapc:agent-id>\n"
-	"      <lmapc:version>lmap version 0.3</lmapc:version>\n"
 	"      <lmapc:last-started>2016-02-21T21:13:40+00:00</lmapc:last-started>\n"
         "    </lmapc:agent>\n"
-        "  </lmapc:lmap-state>\n"
+        "  </lmapc:lmap>\n"
+        "</data>\n";
+    char *b, *c;
+    struct lmap *lmapa = NULL, *lmapb = NULL;
+    
+    lmapa = lmap_new();
+    ck_assert_ptr_ne(lmapa, NULL);
+    ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
+    b = lmap_xml_render_state(lmapa);
+    ck_assert_ptr_ne(b, NULL);
+
+    lmapb = lmap_new();
+    ck_assert_ptr_ne(lmapb, NULL);
+    ck_assert_int_eq(lmap_xml_parse_state_string(lmapb, b), 0);
+    c = lmap_xml_render_state(lmapa);
+    ck_assert_ptr_ne(c, NULL);
+
+    ck_assert_str_eq(b, c);
+    ck_assert_str_eq(c, x);
+
+    lmap_free(lmapa); lmap_free(lmapb);
+    free(b); free(c);
+}
+END_TEST
+
+START_TEST(test_parser_state_capabilities)
+{
+    const char *a =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">"
+        "  <lmapc:lmap xmlns:x=\"urn:example\">"
+        "    <lmapc:capabilities>"
+	"      <lmapc:version>lmap version 0.3</lmapc:version>"
+	"      <x:version>xxxx version 0.0</x:version>"
+	"      <lmapc:tag>system:IPv4 Capable</lmapc:tag>"
+	"      <lmapc:tag>system:IPv4 Works</lmapc:tag>"
+	"      <lmapc:tag>system:IPv6 Capable</lmapc:tag>"
+        "    </lmapc:capabilities>"
+        "  </lmapc:lmap>"
+        "</data>";
+    const char *x =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
+        "  <lmapc:lmap>\n"
+        "    <lmapc:capabilities>\n"
+	"      <lmapc:version>lmap version 0.3</lmapc:version>\n"
+	"      <lmapc:tag>system:IPv4 Capable</lmapc:tag>\n"
+	"      <lmapc:tag>system:IPv4 Works</lmapc:tag>\n"
+	"      <lmapc:tag>system:IPv6 Capable</lmapc:tag>\n"
+        "    </lmapc:capabilities>\n"
+        "  </lmapc:lmap>\n"
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
@@ -1541,7 +1580,7 @@ START_TEST(test_parser_state_schedules)
     const char *a =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">"
-        "  <lmapc:lmap-state>"
+        "  <lmapc:lmap>"
         "    <lmapc:schedules>"
         "      <lmapc:schedule>"
         "        <lmapc:name>demo</lmapc:name>"
@@ -1554,13 +1593,12 @@ START_TEST(test_parser_state_schedules)
         "        <lmapc:last-invocation>2016-02-23T14:31:45+01:00</lmapc:last-invocation>"
 	"      </lmapc:schedule>"
 	"    </lmapc:schedules>"
-        "  </lmapc:lmap-state>"
+        "  </lmapc:lmap>"
         "</data>";
     const char *x =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
-        "  <lmapc:lmap-state>\n"
-        "    <lmapc:agent/>\n"
+        "  <lmapc:lmap>\n"
         "    <lmapc:schedules>\n"
         "      <lmapc:schedule>\n"
         "        <lmapc:name>demo</lmapc:name>\n"
@@ -1573,7 +1611,7 @@ START_TEST(test_parser_state_schedules)
         "        <lmapc:last-invocation>2016-02-23T13:31:45+00:00</lmapc:last-invocation>\n"
 	"      </lmapc:schedule>\n"
 	"    </lmapc:schedules>\n"
-        "  </lmapc:lmap-state>\n"
+        "  </lmapc:lmap>\n"
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
@@ -1603,7 +1641,7 @@ START_TEST(test_parser_state_actions)
     const char *a =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">"
-        "  <lmapc:lmap-state>"
+        "  <lmapc:lmap>"
         "    <lmapc:schedules>"
         "      <lmapc:schedule>"
         "        <lmapc:name>demo</lmapc:name>"
@@ -1633,13 +1671,12 @@ START_TEST(test_parser_state_actions)
         "        </lmapc:action>"
 	"      </lmapc:schedule>"
 	"    </lmapc:schedules>"
-        "  </lmapc:lmap-state>"
+        "  </lmapc:lmap>"
         "</data>";
     const char *x =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
-        "  <lmapc:lmap-state>\n"
-        "    <lmapc:agent/>\n"
+        "  <lmapc:lmap>\n"
         "    <lmapc:schedules>\n"
         "      <lmapc:schedule>\n"
         "        <lmapc:name>demo</lmapc:name>\n"
@@ -1677,7 +1714,7 @@ START_TEST(test_parser_state_actions)
         "        </lmapc:action>\n"
 	"      </lmapc:schedule>\n"
 	"    </lmapc:schedules>\n"
-        "  </lmapc:lmap-state>\n"
+        "  </lmapc:lmap>\n"
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
@@ -1745,6 +1782,7 @@ Suite * lmap_suite(void)
     tcase_add_test(tc_parser, test_parser_config_actions);
     tcase_add_test(tc_parser, test_parser_config_merge);
     tcase_add_test(tc_parser, test_parser_state_agent);
+    tcase_add_test(tc_parser, test_parser_state_capabilities);
     tcase_add_test(tc_parser, test_parser_state_schedules);
     tcase_add_test(tc_parser, test_parser_state_actions);
     suite_add_tcase(s, tc_parser);

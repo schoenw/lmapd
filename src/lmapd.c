@@ -148,11 +148,14 @@ read_config(struct lmapd *lmapd)
     }
     
     if (lmapd->lmap->agent) {
+	lmapd->lmap->agent->last_started = time(NULL);
+    }
+
+    if (lmapd->lmap->capabilities) {
 	char buf[256];
 	snprintf(buf, sizeof(buf), "%s version %d.%d", LMAPD_LMAPD,
 		 LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
-	lmap_agent_set_version(lmapd->lmap->agent, buf);
-	lmapd->lmap->agent->last_started = time(NULL);
+	lmap_capability_set_version(lmapd->lmap->capabilities, buf);
     }
 
     return 0;

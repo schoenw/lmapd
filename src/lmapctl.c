@@ -504,22 +504,15 @@ status_cmd(int argc, char *argv[])
 	return 1;
     }
 
-    /*
-     * Setup the necessary paths to the workspaces - ideally lmapd
-     * would tell us all interesting state and we would not have to
-     * peak into this ourselves.
-     */
-
-    lmapd_workspace_init(lmapd);
-
     if (lmapd->lmap) {
 	lmap = lmapd->lmap;
     }
 
     if (lmap && lmap->agent) {
 	struct agent *agent = lmap->agent;
+	struct capability *cap = lmap->capabilities;
 	printf("agent-id:     %s\n", agent->agent_id);
-	printf("version:      %s\n", agent->version);
+	printf("version:      %s\n", cap ? cap->version : "<?>");
 	printf("last-started: %s\n",
 	       render_datetime_long(&agent->last_started));
 	printf("\n");

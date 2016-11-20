@@ -37,6 +37,16 @@
 #include "utils.h"
 #include "parser.h"
 
+#define RENDER_CONFIG_TRUE	0x01
+#define RENDER_CONFIG_FALSE	0x02
+
+#define PARSE_CONFIG_TRUE	0x01
+#define PARSE_CONFIG_FALSE	0x02
+
+#define YANG_CONFIG_TRUE	0x01
+#define YANG_CONFIG_FALSE	0x02
+#define YANG_KEY		0x04
+
 /**
  * @brief Parses the agent information
  * @details Function to parse the agent object information from the XML config
@@ -44,7 +54,7 @@
  * @return 0 on success, -1 on error
  */
 static int
-parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx)
+parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
 {
     int i, j;
     xmlXPathObjectPtr result;
@@ -53,26 +63,37 @@ parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx)
     
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct agent *a, const char *c);
     } tab[] = {
-	{ "agent-id",		lmap_agent_set_agent_id },
-	{ "group-id",		lmap_agent_set_group_id },
-	{ "measurement-point",	lmap_agent_set_measurement_point },
-	{ "report-agent-id",	lmap_agent_set_report_agent_id },
-	{ "report-group-id",	lmap_agent_set_report_group_id },
-	{ "report-measurement-point",	lmap_agent_set_report_measurement_point },
-	{ "controller-timeout",	lmap_agent_set_controller_timeout },
-	{ NULL, NULL }
+	{ .name = "agent-id",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_agent_id },
+	{ .name = "group-id",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_group_id },
+	{ .name = "measurement-point",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_measurement_point },
+	{ .name = "report-agent-id",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_report_agent_id },
+	{ .name = "report-group-id",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_report_group_id },
+	{ .name = "report-measurement-point",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_report_measurement_point },
+	{ .name = "controller-timeout",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_agent_set_controller_timeout },
+	{ .name = "last-started",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_agent_set_last_started },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
     
     assert(lmap);
-    
-    if (! lmap->agent) {
-	lmap->agent = lmap_agent_new();
-	if (! lmap->agent) {
-	    return -1;
-	}
-    }
     
     result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
     if (! result) {
@@ -80,17 +101,34 @@ parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx)
 	return -1;
     }
     
+    if (!result->nodesetval || !result->nodesetval->nodeNr) {
+	xmlXPathFreeObject(result);
+	return 0;
+    }
+
+    if (! lmap->agent) {
+	lmap->agent = lmap_agent_new();
+	if (! lmap->agent) {
+	    xmlXPathFreeObject(result);
+	    return -1;
+	}
+    }
+    
     for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
 	xmlNodePtr node = result->nodesetval->nodeTab[i];
 	
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(lmap->agent, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(lmap->agent, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -103,55 +141,69 @@ parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx)
 }
 
 /**
- * @brief Parses the agent state information
- * @details Function to parse the agent object information from the XML config
+ * @brief Parses the capabilities information
+ * @details Function to parse the capability object information from the XML config
  * file
  * @return 0 on success, -1 on error
  */
 static int
-parse_agent_state(struct lmap *lmap, xmlXPathContextPtr ctx)
+parse_capabilities(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
 {
     int i, j;
     xmlXPathObjectPtr result;
     
-    const char *xpath = "//lmapc:lmap-state/lmapc:agent/lmapc:*";
+    const char *xpath = "//lmapc:lmap/lmapc:capabilities/lmapc:*";
     
     struct {
 	char *name;
-	int (*func)(struct agent *a, const char *c);
+	int flags;
+	int (*func)(struct capability *a, const char *c);
     } tab[] = {
-	{ "agent-id",		lmap_agent_set_agent_id },
-	{ "version",		lmap_agent_set_version },
-	{ "last-started",	lmap_agent_set_last_started },
-	{ NULL, NULL }
+	{ .name = "version",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_capability_set_version },
+	{ .name = "tag",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_capability_add_tag },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
     
     assert(lmap);
-    
-    if (! lmap->agent) {
-	lmap->agent = lmap_agent_new();
-	if (! lmap->agent) {
-	    return -1;
-	}
-    }
     
     result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
     if (! result) {
 	lmap_err("error in xpath expression '%s'", xpath);
 	return -1;
     }
+
+    if (!result->nodesetval || !result->nodesetval->nodeNr) {
+	xmlXPathFreeObject(result);
+	return 0;
+    }
+
+    if (! lmap->capabilities) {
+	lmap->capabilities = lmap_capability_new();
+	if (! lmap->capabilities) {
+	    xmlXPathFreeObject(result);
+	    return -1;
+	}
+    }
     
     for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
 	xmlNodePtr node = result->nodesetval->nodeTab[i];
 	
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(lmap->agent, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(lmap->capabilities, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -164,7 +216,7 @@ parse_agent_state(struct lmap *lmap, xmlXPathContextPtr ctx)
 }
 
 static struct supp *
-parse_suppression(xmlNodePtr supp_node)
+parse_suppression(xmlNodePtr supp_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -172,14 +224,28 @@ parse_suppression(xmlNodePtr supp_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct supp *s, const char *c);
     } tab[] = {
-	{ "name",			lmap_supp_set_name },
-	{ "start",			lmap_supp_set_start },
-	{ "end",			lmap_supp_set_end },
-	{ "match",			lmap_supp_add_match },
-	{ "stop-running",		lmap_supp_set_stop_running },
-	{ NULL, NULL }
+	{ .name = "name",
+	  .flags = YANG_CONFIG_TRUE | YANG_KEY,
+	  .func = lmap_supp_set_name },
+	{ .name = "start",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_supp_set_start },
+	{ .name = "end",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_supp_set_end },
+	{ .name = "match",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_supp_add_match },
+	{ .name = "stop-running",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_supp_set_stop_running },
+	{ .name = "state",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_supp_set_state },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     supp = lmap_supp_new();
@@ -193,13 +259,17 @@ parse_suppression(xmlNodePtr supp_node)
 	if (node->ns != supp_node->ns) continue;
 
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(supp, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(supp, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -217,7 +287,7 @@ parse_suppression(xmlNodePtr supp_node)
  * @return 0 on success, -1 on error
  */
 static int
-parse_suppressions(struct lmap *lmap, xmlXPathContextPtr ctx)
+parse_suppressions(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
 {
     int i;
     xmlXPathObjectPtr result;
@@ -234,7 +304,7 @@ parse_suppressions(struct lmap *lmap, xmlXPathContextPtr ctx)
     }
 
     for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	supp = parse_suppression(result->nodesetval->nodeTab[i]);
+	supp = parse_suppression(result->nodesetval->nodeTab[i], what);
 	if (supp) {
 	    lmap_add_supp(lmap, supp);
 	}
@@ -245,7 +315,7 @@ parse_suppressions(struct lmap *lmap, xmlXPathContextPtr ctx)
 }
 
 static struct option *
-parse_option(xmlNodePtr option_node)
+parse_option(xmlNodePtr option_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -253,12 +323,19 @@ parse_option(xmlNodePtr option_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct option *s, const char *c);
     } tab[] = {
-	{ "id",			lmap_option_set_id },
-	{ "name",               lmap_option_set_name },
-	{ "value",              lmap_option_set_value },
-	{ NULL, NULL }
+	{ .name = "id",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_option_set_id },
+	{ .name = "name",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_option_set_name },
+	{ .name = "value",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_option_set_value },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     option = lmap_option_new();
@@ -272,13 +349,17 @@ parse_option(xmlNodePtr option_node)
 	if (node->ns != option_node->ns) continue;
 
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(option, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(option, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -290,7 +371,7 @@ parse_option(xmlNodePtr option_node)
 }
 
 static struct registry *
-parse_registry(xmlNodePtr registry_node)
+parse_registry(xmlNodePtr registry_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -298,11 +379,16 @@ parse_registry(xmlNodePtr registry_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct registry *s, const char *c);
     } tab[] = {
-	{ "uri",		lmap_registry_set_uri },
-	{ "role",               lmap_registry_add_role },
-	{ NULL, NULL }
+	{ .name = "uri",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_registry_set_uri },
+	{ .name = "role",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_registry_add_role },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     registry = lmap_registry_new();
@@ -316,13 +402,17 @@ parse_registry(xmlNodePtr registry_node)
 	if (node->ns != registry_node->ns) continue;
 
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(registry, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(registry, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -334,7 +424,7 @@ parse_registry(xmlNodePtr registry_node)
 }
 
 static struct task *
-parse_task(xmlNodePtr task_node)
+parse_task(xmlNodePtr task_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -342,13 +432,22 @@ parse_task(xmlNodePtr task_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct task *s, const char *c);
     } tab[] = {
-	{ "name",			lmap_task_set_name },
-	{ "program",			lmap_task_set_program },
-	{ "tag",			lmap_task_add_tag },
-	{ "suppress-by-default",	lmap_task_set_suppress_by_default },
-	{ NULL, NULL }
+	{ .name = "name",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_task_set_name },
+	{ .name = "program",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_task_set_program },
+	{ .name = "tag",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_task_add_tag },
+	{ .name = "suppress-by-default",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_task_set_suppress_by_default },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     task = lmap_task_new();
@@ -362,25 +461,29 @@ parse_task(xmlNodePtr task_node)
 	if (node->ns != task_node->ns) continue;
 
 	if (!xmlStrcmp(node->name, BAD_CAST "option")) {
-	    struct option *option = parse_option(node);
+	    struct option *option = parse_option(node, what);
 	    lmap_task_add_option(task, option);
 	    continue;
 	}
 
-	if (!xmlStrcmp(node->name, BAD_CAST "registry")) {
-	    struct registry *registry = parse_registry(node);
+	if (!xmlStrcmp(node->name, BAD_CAST "function")) {
+	    struct registry *registry = parse_registry(node, what);
 	    lmap_task_add_registry(task, registry);
 	    continue;
 	}
 
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(task, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(task, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -398,7 +501,7 @@ parse_task(xmlNodePtr task_node)
  * @return 0 on success, -1 on error
  */
 static int
-parse_tasks(struct lmap *lmap, xmlXPathContextPtr ctx)
+parse_tasks(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
 {
     int i;
     xmlXPathObjectPtr result;
@@ -415,7 +518,7 @@ parse_tasks(struct lmap *lmap, xmlXPathContextPtr ctx)
     }
 
     for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	task = parse_task(result->nodesetval->nodeTab[i]);
+	task = parse_task(result->nodesetval->nodeTab[i], what);
 	if (task) {
 	    lmap_add_task(lmap, task);
 	}
@@ -426,19 +529,26 @@ parse_tasks(struct lmap *lmap, xmlXPathContextPtr ctx)
 }
 
 static void
-parse_periodic(struct event *event, xmlNodePtr period_node)
+parse_periodic(struct event *event, xmlNodePtr period_node, int what)
 {
     int j;
     xmlNodePtr node;
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct event *e, const char *c);
     } tab[] = {
-	{ "interval",			lmap_event_set_interval },
-	{ "start",			lmap_event_set_start },
-	{ "end",			lmap_event_set_end },
-	{ NULL, NULL }
+	{ .name = "interval",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_interval },
+	{ .name = "start",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_start },
+	{ .name = "end",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_end },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     for (node = xmlFirstElementChild(period_node);
@@ -447,13 +557,17 @@ parse_periodic(struct event *event, xmlNodePtr period_node)
 	if (node->ns != period_node->ns) continue;
 	
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(event, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(event, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -463,25 +577,44 @@ parse_periodic(struct event *event, xmlNodePtr period_node)
 }
 
 static void
-parse_calendar(struct event *event, xmlNodePtr calendar_node)
+parse_calendar(struct event *event, xmlNodePtr calendar_node, int what)
 {
     int j;
     xmlNodePtr node;
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct event *e, const char *c);
     } tab[] = {
-	{ "month",			lmap_event_add_month },
-	{ "day-of-month",		lmap_event_add_day_of_month },
-	{ "day-of-week",		lmap_event_add_day_of_week },
-	{ "hour",			lmap_event_add_hour },
-	{ "minute",			lmap_event_add_minute },
-	{ "second",			lmap_event_add_second },
-	{ "timezone-offset",		lmap_event_set_timezone_offset },
-	{ "start",			lmap_event_set_start },
-	{ "end",			lmap_event_set_end },
-	{ NULL, NULL }
+	{ .name = "month",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_add_month },
+	{ .name = "day-of-month",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_add_day_of_month },
+	{ .name = "day-of-week",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_add_day_of_week },
+	{ .name = "hour",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_add_hour },
+	{ .name = "minute",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_add_minute },
+	{ .name = "second",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_add_second },
+	{ .name = "timezone-offset",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_timezone_offset },
+	{ .name = "start",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_start },
+	{ .name = "end",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_end },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     for (node = xmlFirstElementChild(calendar_node);
@@ -490,13 +623,17 @@ parse_calendar(struct event *event, xmlNodePtr calendar_node)
 	if (node->ns != calendar_node->ns) continue;
 	
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(event, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(event, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -506,17 +643,20 @@ parse_calendar(struct event *event, xmlNodePtr calendar_node)
 }
 
 static void
-parse_one_off(struct event *event, xmlNodePtr one_off_node)
+parse_one_off(struct event *event, xmlNodePtr one_off_node, int what)
 {
     int j;
     xmlNodePtr node;
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct event *e, const char *c);
     } tab[] = {
-	{ "time",		lmap_event_set_start },
-	{ NULL, NULL }
+	{ .name = "time",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_start },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     for (node = xmlFirstElementChild(one_off_node);
@@ -541,7 +681,7 @@ parse_one_off(struct event *event, xmlNodePtr one_off_node)
 }
 
 static struct event *
-parse_event(xmlNodePtr event_node)
+parse_event(xmlNodePtr event_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -549,19 +689,51 @@ parse_event(xmlNodePtr event_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct event *e, const char *c);
-	void (*parse)(struct event *e, xmlNodePtr node);
+	void (*parse)(struct event *e, xmlNodePtr node, int what);
     } tab[] = {
-	{ "name",			lmap_event_set_name, NULL },
-	{ "periodic",			lmap_event_set_type, parse_periodic },
-	{ "calendar",			lmap_event_set_type, parse_calendar },
-	{ "one-off",			lmap_event_set_type, parse_one_off },
-	{ "immediate",			lmap_event_set_type, NULL },
-	{ "startup",			lmap_event_set_type, NULL },
-	{ "controller-lost",		lmap_event_set_type, NULL },
-	{ "controller-connected",	lmap_event_set_type, NULL },
-	{ "random-spread",		lmap_event_set_random_spread, NULL },
-	{ NULL, NULL, NULL }
+	{ .name = "name",
+	  .flags = YANG_CONFIG_TRUE | YANG_KEY,
+	  .func = lmap_event_set_name,
+	  .parse = NULL },
+	{ .name = "random-spread",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_random_spread,
+	  .parse = NULL },
+	{ .name = "cycle-interval",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_cycle_interval,
+	  .parse = NULL },
+	{ .name = "periodic",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = parse_periodic },
+	{ .name = "calendar",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = parse_calendar },
+	{ .name = "one-off",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = parse_one_off },
+	{ .name = "immediate",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = NULL },
+	{ .name = "startup",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = NULL },
+	{ .name = "controller-lost",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = NULL },
+	{ .name = "controller-connected",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_event_set_type,
+	  .parse = NULL },
+	{ .name = NULL, .flags = 0, .func = NULL, .parse = NULL }
     };
 
     event = lmap_event_new();
@@ -575,20 +747,24 @@ parse_event(xmlNodePtr event_node)
 	if (node->ns != event_node->ns) continue;
 	
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		if (tab[j].func == lmap_event_set_type) {
-		    tab[j].func(event, (char *) node->name);
-		} else {
-		    xmlChar *content = xmlNodeGetContent(node);
-		    tab[j].func(event, (char *) content);
-		    if (content) {
-			xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    if (tab[j].func == lmap_event_set_type) {
+			tab[j].func(event, (char *) node->name);
+		    } else {
+			xmlChar *content = xmlNodeGetContent(node);
+			tab[j].func(event, (char *) content);
+			if (content) {
+			    xmlFree(content);
+			}
 		    }
+		    if (tab[j].parse) {
+			tab[j].parse(event, node, what);
+		    }
+		    break;
 		}
-		if (tab[j].parse) {
-		    tab[j].parse(event, node);
-		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -606,7 +782,7 @@ parse_event(xmlNodePtr event_node)
  * @return 0 on success, -1 on error
  */
 static int
-parse_events(struct lmap *lmap, xmlXPathContextPtr ctx)
+parse_events(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
 {
     int i;
     xmlXPathObjectPtr result;
@@ -623,7 +799,7 @@ parse_events(struct lmap *lmap, xmlXPathContextPtr ctx)
     }
 
     for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	event = parse_event(result->nodesetval->nodeTab[i]);
+	event = parse_event(result->nodesetval->nodeTab[i], what);
 	if (event) {
 	    lmap_add_event(lmap, event);
 	}
@@ -634,7 +810,7 @@ parse_events(struct lmap *lmap, xmlXPathContextPtr ctx)
 }
 
 static struct action *
-parse_action(xmlNodePtr action_node)
+parse_action(xmlNodePtr action_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -642,14 +818,64 @@ parse_action(xmlNodePtr action_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct action *s, const char *c);
     } tab[] = {
-	{ "name",		lmap_action_set_name },
-	{ "task",               lmap_action_set_task },
-	{ "destination",        lmap_action_add_destination },
-	{ "tag",		lmap_action_add_tag },
-	{ "suppression-tag",	lmap_action_add_suppression_tag },
-	{ NULL, NULL }
+	{ .name = "name",
+	  .flags = YANG_CONFIG_TRUE | YANG_KEY,
+	  .func = lmap_action_set_name },
+	{ .name = "task",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_action_set_task },
+	{ .name = "destination",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_action_add_destination },
+	{ .name = "tag",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_action_add_tag },
+	{ .name = "suppression-tag",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_action_add_suppression_tag },
+	{ .name = "state",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_state },
+	{ .name = "storage",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_storage },
+	{ .name = "invocations",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_invocations },
+	{ .name = "suppressions",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_suppressions },
+	{ .name = "overlaps",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_overlaps },
+	{ .name = "failures",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_failures },
+	{ .name = "last-invocation",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_invocation },
+	{ .name = "last-completion",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_completion },
+	{ .name = "last-status",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_status },
+	{ .name = "last-message",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_message },
+	{ .name = "last-failed-completion",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_failed_completion },
+	{ .name = "last-failed-status",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_failed_status },
+	{ .name = "last-failed-message",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_action_set_last_failed_message },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     action = lmap_action_new();
@@ -663,19 +889,23 @@ parse_action(xmlNodePtr action_node)
 	if (node->ns != action_node->ns) continue;
 
 	if (!xmlStrcmp(node->name, BAD_CAST "option")) {
-	    struct option *option = parse_option(node);
+	    struct option *option = parse_option(node, what);
 	    lmap_action_add_option(action, option);
 	    continue;
 	}
 
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(action, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(action, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -687,7 +917,7 @@ parse_action(xmlNodePtr action_node)
 }
 
 static struct schedule *
-parse_schedule(xmlNodePtr schedule_node)
+parse_schedule(xmlNodePtr schedule_node, int what)
 {
     int j;
     xmlNodePtr node;
@@ -695,16 +925,52 @@ parse_schedule(xmlNodePtr schedule_node)
 
     struct {
 	char *name;
+	int flags;
 	int (*func)(struct schedule *e, const char *c);
     } tab[] = {
-	{ "name",		lmap_schedule_set_name },
-	{ "start",		lmap_schedule_set_start },
-	{ "end",		lmap_schedule_set_end },
-	{ "duration",		lmap_schedule_set_duration },
-	{ "execution-mode",	lmap_schedule_set_exec_mode },
-	{ "tag",		lmap_schedule_add_tag },
-	{ "suppression-tag",	lmap_schedule_add_suppression_tag },
-	{ NULL, NULL }
+	{ .name = "name",
+	  .flags = YANG_CONFIG_TRUE | YANG_KEY,
+	  .func = lmap_schedule_set_name },
+	{ .name = "start",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_schedule_set_start },
+	{ .name = "end",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_schedule_set_end },
+	{ .name = "duration",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_schedule_set_duration },
+	{ .name = "execution-mode",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_schedule_set_exec_mode },
+	{ .name = "tag",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_schedule_add_tag },
+	{ .name = "suppression-tag",
+	  .flags = YANG_CONFIG_TRUE,
+	  .func = lmap_schedule_add_suppression_tag },
+	{ .name = "state",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_state },
+	{ .name = "storage",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_storage },
+	{ .name = "invocations",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_invocations },
+	{ .name = "suppressions",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_suppressions },
+	{ .name = "overlaps",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_overlaps },
+	{ .name = "failures",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_failures },
+	{ .name = "last-invocation",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_schedule_set_last_invocation },
+	{ .name = NULL, .flags = 0, .func = NULL }
     };
 
     schedule = lmap_schedule_new();
@@ -718,19 +984,23 @@ parse_schedule(xmlNodePtr schedule_node)
 	if (node->ns != schedule_node->ns) continue;
 	
 	if (!xmlStrcmp(node->name, BAD_CAST "action")) {
-	    struct action *action = parse_action(node);
+	    struct action *action = parse_action(node, what);
 	    lmap_schedule_add_action(schedule, action);
 	    continue;
 	}
 
 	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(schedule, (char *) content);
-		if (content) {
-		    xmlFree(content);
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(schedule, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
 	if (! tab[j].name) {
@@ -748,7 +1018,7 @@ parse_schedule(xmlNodePtr schedule_node)
  * @return 0 on success, -1 on error
  */
 static int
-parse_schedules(struct lmap *lmap, xmlXPathContextPtr ctx)
+parse_schedules(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
 {
     int i;
     xmlXPathObjectPtr result;
@@ -765,237 +1035,7 @@ parse_schedules(struct lmap *lmap, xmlXPathContextPtr ctx)
     }
 
     for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	schedule = parse_schedule(result->nodesetval->nodeTab[i]);
-	if (schedule) {
-	    lmap_add_schedule(lmap, schedule);
-	}
-    }
-
-    xmlXPathFreeObject(result);
-    return 0;
-}
-
-static struct supp *
-parse_suppression_state(xmlNodePtr supp_node)
-{
-    int j;
-    xmlNodePtr node;
-    struct supp *supp;
-
-    struct {
-	char *name;
-	int (*func)(struct supp *s, const char *c);
-    } tab[] = {
-	{ "name",			lmap_supp_set_name },
-	{ "state",			lmap_supp_set_state },
-	{ NULL, NULL }
-    };
-
-    supp = lmap_supp_new();
-    if (! supp) {
-	return NULL;
-    }
-
-    for (node = xmlFirstElementChild(supp_node);
-	 node; node = xmlNextElementSibling(node)) {
-
-	if (node->ns != supp_node->ns) continue;
-
-	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(supp, (char *) content);
-		if (content) {
-		    xmlFree(content);
-		}
-		break;
-	    }
-	}
-	if (! tab[j].name) {
-	    lmap_wrn("unexpected element '%s'", node->name);
-	}
-    }
-
-    return supp;
-}
-
-/**
- * @brief Parses the suppression state information
- * @details Function to parse the suppression state information from the XML
- * file
- * @return 0 on success, -1 on error
- */
-static int
-parse_suppressions_state(struct lmap *lmap, xmlXPathContextPtr ctx)
-{
-    int i;
-    xmlXPathObjectPtr result;
-    struct supp *supp;
-    
-    const char *xpath = "//lmapc:lmap-state/lmapc:suppressions/lmapc:suppression";
-
-    assert(lmap);
-
-    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
-    if (! result) {
-	lmap_err("error in xpath expression '%s'", xpath);
-	return -1;
-    }
-
-    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	supp = parse_suppression_state(result->nodesetval->nodeTab[i]);
-	if (supp) {
-	    lmap_add_supp(lmap, supp);
-	}
-    }
-
-    xmlXPathFreeObject(result);
-    return 0;
-}
-
-static struct action *
-parse_action_state(xmlNodePtr action_node)
-{
-    int j;
-    xmlNodePtr node;
-    struct action *action;
-
-    struct {
-	char *name;
-	int (*func)(struct action *s, const char *c);
-    } tab[] = {
-	{ "name",			lmap_action_set_name },
-	{ "state",			lmap_action_set_state },
-	{ "storage",			lmap_action_set_storage },
-	{ "invocations",		lmap_action_set_invocations },
-	{ "suppressions",		lmap_action_set_suppressions },
-	{ "overlaps",			lmap_action_set_overlaps },
-	{ "failures",			lmap_action_set_failures },
-	{ "last-invocation",		lmap_action_set_last_invocation },
-	{ "last-completion",		lmap_action_set_last_completion },
-	{ "last-status",		lmap_action_set_last_status },
-	{ "last-message",		lmap_action_set_last_message },
-	{ "last-failed-completion",	lmap_action_set_last_failed_completion },
-	{ "last-failed-status",		lmap_action_set_last_failed_status },
-	{ "last-failed-message",	lmap_action_set_last_failed_message },
-	{ NULL, NULL }
-    };
-
-    action = lmap_action_new();
-    if (! action) {
-	return NULL;
-    }
-
-    for (node = xmlFirstElementChild(action_node);
-	 node; node = xmlNextElementSibling(node)) {
-
-	if (node->ns != action_node->ns) continue;
-
-	if (!xmlStrcmp(node->name, BAD_CAST "option")) {
-	    struct option *option = parse_option(node);
-	    lmap_action_add_option(action, option);
-	    continue;
-	}
-
-	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(action, (char *) content);
-		if (content) {
-		    xmlFree(content);
-		}
-		break;
-	    }
-	}
-	if (! tab[j].name) {
-	    lmap_wrn("unexpected element '%s'", node->name);
-	}
-    }
-
-    return action;
-}
-
-static struct schedule *
-parse_schedule_state(xmlNodePtr schedule_node)
-{
-    int j;
-    xmlNodePtr node;
-    struct schedule *schedule;
-
-    struct {
-	char *name;
-	int (*func)(struct schedule *e, const char *c);
-    } tab[] = {
-	{ "name",		lmap_schedule_set_name },
-	{ "state",		lmap_schedule_set_state },
-	{ "storage",		lmap_schedule_set_storage },
-	{ "invocations",	lmap_schedule_set_invocations },
-	{ "suppressions",	lmap_schedule_set_suppressions },
-	{ "overlaps",		lmap_schedule_set_overlaps },
-	{ "failures",		lmap_schedule_set_failures },
-	{ "last-invocation",	lmap_schedule_set_last_invocation },
-	{ NULL, NULL }
-    };
-
-    schedule = lmap_schedule_new();
-    if (! schedule) {
-	return NULL;
-    }
-
-    for (node = xmlFirstElementChild(schedule_node);
-	 node; node = xmlNextElementSibling(node)) {
-	
-	if (node->ns != schedule_node->ns) continue;
-	
-	if (!xmlStrcmp(node->name, BAD_CAST "action")) {
-	    struct action *action = parse_action_state(node);
-	    lmap_schedule_add_action(schedule, action);
-	    continue;
-	}
-
-	for (j = 0; tab[j].name; j++) {
-	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		xmlChar *content = xmlNodeGetContent(node);
-		tab[j].func(schedule, (char *) content);
-		if (content) {
-		    xmlFree(content);
-		}
-		break;
-	    }
-	}
-	if (! tab[j].name) {
-	    lmap_wrn("unexpected element '%s'", node->name);
-	}
-    }
-
-    return schedule;
-}
-
-/**
- * @brief Parses the schedule state information
- * @details Function to parse the schedule state information from the XML
- * file
- * @return 0 on success, -1 on error
- */
-static int
-parse_schedules_state(struct lmap *lmap, xmlXPathContextPtr ctx)
-{
-    int i;
-    xmlXPathObjectPtr result;
-    struct schedule *schedule;
-    
-    const char *xpath = "//lmapc:lmap-state/lmapc:schedules/lmapc:schedule";
-
-    assert(lmap);
-
-    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
-    if (! result) {
-	lmap_err("error in xpath expression '%s'", xpath);
-	return -1;
-    }
-
-    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	schedule = parse_schedule_state(result->nodesetval->nodeTab[i]);
+	schedule = parse_schedule(result->nodesetval->nodeTab[i], what);
 	if (schedule) {
 	    lmap_add_schedule(lmap, schedule);
 	}
@@ -1006,15 +1046,16 @@ parse_schedules_state(struct lmap *lmap, xmlXPathContextPtr ctx)
 }
 
 static int
-parse_config_doc(struct lmap *lmap, xmlDocPtr doc)
+parse_control(struct lmap *lmap, xmlDocPtr doc, int what)
 {
     int i, ret;
     xmlXPathContextPtr ctx = NULL;
 
     struct {
-	int (*parse)(struct lmap *lmap, xmlXPathContextPtr ctx);
+	int (*parse)(struct lmap *lmap, xmlXPathContextPtr ctx, int what);
     } tab[] = {
 	{ parse_agent },
+	{ parse_capabilities },
 	{ parse_schedules },
 	{ parse_suppressions },
 	{ parse_tasks },
@@ -1040,7 +1081,7 @@ parse_config_doc(struct lmap *lmap, xmlDocPtr doc)
     }
 
     for (i = 0; tab[i].parse; i++) {
-	ret = tab[i].parse(lmap, ctx);
+	ret = tab[i].parse(lmap, ctx, what);
 	if (ret != 0) {
 	    goto exit;
 	}
@@ -1051,6 +1092,12 @@ exit:
 	xmlXPathFreeContext(ctx);
     }
     return ret;
+}
+
+static int
+parse_config_doc(struct lmap *lmap, xmlDocPtr doc)
+{
+    return parse_control(lmap, doc, PARSE_CONFIG_TRUE);
 }
 
 int
@@ -1145,47 +1192,7 @@ exit:
 static int
 parse_state_doc(struct lmap *lmap, xmlDocPtr doc)
 {
-    int i, ret;
-    xmlXPathContextPtr ctx = NULL;
-
-    struct {
-	int (*parse)(struct lmap *lmap, xmlXPathContextPtr ctx);
-    } tab[] = {
-	{ parse_agent_state },
-	{ parse_schedules_state },
-	{ parse_suppressions_state },
-	{ NULL }
-    };
-
-    assert(lmap && doc);
-
-    ctx = xmlXPathNewContext(doc);
-    if (! ctx) {
-	lmap_err("cannot create xpath context");
-	ret = -1;
-	goto exit;
-    }
-
-    ret = xmlXPathRegisterNs(ctx, BAD_CAST LMAPC_PREFIX,
-			     BAD_CAST LMAPC_NAMESPACE);
-    if (ret != 0) {
-	lmap_err("cannot register xpath namespace '%s'", LMAPC_NAMESPACE);
-	ret = -1;
-	goto exit;
-    }
-
-    for (i = 0; tab[i].parse; i++) {
-	ret = tab[i].parse(lmap, ctx);
-	if (ret != 0) {
-	    goto exit;
-	}
-    }
-
-exit:
-    if (ctx) {
-	xmlXPathFreeContext(ctx);
-    }
-    return ret;
+    return parse_control(lmap, doc, (PARSE_CONFIG_TRUE | PARSE_CONFIG_FALSE));
 }
 
 int
@@ -1425,7 +1432,7 @@ render_registry(struct registry *registry, xmlNodePtr root, xmlNsPtr ns)
 	return;
     }
     
-    node = xmlNewChild(root, ns, BAD_CAST "registry", NULL);
+    node = xmlNewChild(root, ns, BAD_CAST "function", NULL);
     if (! node) {
 	return;
     }
@@ -1457,7 +1464,7 @@ render_option(struct option *option, xmlNodePtr root, xmlNsPtr ns)
 }
 
 static void
-render_agent(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
+render_agent(struct agent *agent, xmlNodePtr root, xmlNsPtr ns, int what)
 {
     xmlNodePtr node;
 
@@ -1466,50 +1473,61 @@ render_agent(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
     }
 
     node = xmlNewChild(root, ns, BAD_CAST "agent", NULL);
-
     if (! node) {
 	return;
     }
 
-    render_leaf(node, ns, "agent-id", agent->agent_id);
-    render_leaf(node, ns, "group-id", agent->group_id);
-    render_leaf(node, ns, "measurement-point", agent->measurement_point);
-    if (agent->flags & LMAP_AGENT_FLAG_REPORT_AGENT_ID_SET) {
-	render_leaf(node, ns, "report-agent-id",
-		    agent->report_agent_id ? "true" : "false");
+    if (what & RENDER_CONFIG_TRUE) {
+	render_leaf(node, ns, "agent-id", agent->agent_id);
+	render_leaf(node, ns, "group-id", agent->group_id);
+	render_leaf(node, ns, "measurement-point", agent->measurement_point);
+	if (agent->flags & LMAP_AGENT_FLAG_REPORT_AGENT_ID_SET) {
+	    render_leaf(node, ns, "report-agent-id",
+			agent->report_agent_id ? "true" : "false");
+	}
+	if (agent->flags & LMAP_AGENT_FLAG_REPORT_GROUP_ID_SET) {
+	    render_leaf(node, ns, "report-group-id",
+			agent->report_group_id ? "true" : "false");
+	}
+	if (agent->flags & LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET) {
+	    render_leaf(node, ns, "report-measurement-point",
+			agent->report_measurement_point ? "true" : "false");
+	}
+	if (agent->flags & LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET) {
+	    render_leaf_uint32(node, ns, "controller-timeout",
+			       agent->controller_timeout);
+	}
     }
-    if (agent->flags & LMAP_AGENT_FLAG_REPORT_GROUP_ID_SET) {
-	render_leaf(node, ns, "report-group-id",
-		    agent->report_group_id ? "true" : "false");
-    }
-    if (agent->flags & LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET) {
-	render_leaf(node, ns, "report-measurement-point",
-		    agent->report_measurement_point ? "true" : "false");
-    }
-    if (agent->flags & LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET) {
-	render_leaf_uint32(node, ns, "controller-timeout",
-			   agent->controller_timeout);
+    if (what & RENDER_CONFIG_FALSE) {
+	if (agent->last_started) {
+	    render_leaf_datetime(node, ns, "last-started", &agent->last_started);
+	}
     }
 }
 
 static void
-render_agent_state(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
+render_capabilities(struct capability *capability, xmlNodePtr root, xmlNsPtr ns, int what)
 {
+    struct tag *tag;
     xmlNodePtr node;
 
-    if (! agent) {
+    if (! capability) {
 	return;
     }
 
-    node = xmlNewChild(root, ns, BAD_CAST "agent", NULL);
+    node = xmlNewChild(root, ns, BAD_CAST "capabilities", NULL);
     if (! node) {
 	return;
     }
 
-    render_leaf(node, ns, "agent-id", agent->agent_id);
-    render_leaf(node, ns, "version", agent->version);
-    if (agent->last_started) {
-	render_leaf_datetime(node, ns, "last-started", &agent->last_started);
+    if (what & RENDER_CONFIG_FALSE) {
+	if (capability->version) {
+	    render_leaf(node, ns, "version", capability->version);
+	}
+    }
+
+    for (tag = capability->tags; tag; tag = tag->next) {
+	render_leaf(node, ns, "tag", tag->tag);
     }
 }
 
@@ -1527,7 +1545,7 @@ render_agent_report(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
     if (agent->agent_id && agent->report_agent_id) {
 	render_leaf(root, ns, "agent-id", agent->agent_id);
     }
-    if (agent->group_id) {
+    if (agent->group_id && agent->report_group_id) {
 	render_leaf(root, ns, "group-id", agent->group_id);
     }
     if (agent->measurement_point && agent->report_measurement_point) {
@@ -1536,7 +1554,7 @@ render_agent_report(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
 }
 
 static void
-render_action(struct action *action, xmlNodePtr root, xmlNsPtr ns)
+render_action(struct action *action, xmlNodePtr root, xmlNsPtr ns, int what)
 {
     struct option *option;
     struct tag *tag;
@@ -1552,172 +1570,24 @@ render_action(struct action *action, xmlNodePtr root, xmlNsPtr ns)
     }
 
     render_leaf(node, ns, "name", action->name);
-    render_leaf(node, ns, "task", action->task);
-    for (tag = action->destinations; tag; tag = tag->next) {
-	render_leaf(node, ns, "destination", tag->tag);
-    }
-    for (option = action->options; option; option = option->next) {
-	render_option(option, node, ns);
-    }
-    for (tag = action->tags; tag; tag = tag->next) {
-	render_leaf(node, ns, "tag", tag->tag);
-    }
-    for (tag = action->suppression_tags; tag; tag = tag->next) {
-	render_leaf(node, ns, "suppression-tag", tag->tag);
-    }
-}
-
-static void
-render_action_state(struct action *action, xmlNodePtr root, xmlNsPtr ns)
-{
-    char *state = NULL;
-    xmlNodePtr node;
-
-    if (! action) {
-	return;
-    }
-
-    node = xmlNewChild(root, ns, BAD_CAST "action", NULL);
-    if (! node) {
-	return;
-    }
-
-    render_leaf(node, ns, "name", action->name);
-
-    switch (action->state) {
-    case LMAP_SCHEDULE_STATE_ENABLED:
-	state = "enabled";
-	break;
-    case LMAP_SCHEDULE_STATE_DISABLED:
-	state = "disabled";
-	break;
-    case LMAP_SCHEDULE_STATE_RUNNING:
-	state = "running";
-	break;
-    case LMAP_SCHEDULE_STATE_SUPPRESSED:
-	state = "suppressed";
-	break;
-    }
-    if (state) {
-	render_leaf(node, ns, "state", state);
-    }
-
-    render_leaf_uint64(node, ns, "storage", action->storage);
-    render_leaf_uint32(node, ns, "invocations", action->cnt_invocations);
-    render_leaf_uint32(node, ns, "suppressions", action->cnt_suppressions);
-    render_leaf_uint32(node, ns, "overlaps", action->cnt_overlaps);
-    render_leaf_uint32(node, ns, "failures", action->cnt_failures);
-		       
-    if (action->last_invocation) {
-	render_leaf_datetime(node, ns, "last-invocation",
-			     &action->last_invocation);
-    }
-    if (action->last_completion) {
-	render_leaf_datetime(node, ns, "last-completion",
-			     &action->last_completion);
-	render_leaf_int32(node, ns, "last-status",
-			  action->last_status);
-	if (action->last_message) {
-	    render_leaf(node, ns, "last-message",
-			action->last_message);
+    if (what & RENDER_CONFIG_TRUE) {
+	render_leaf(node, ns, "task", action->task);
+	for (tag = action->destinations; tag; tag = tag->next) {
+	    render_leaf(node, ns, "destination", tag->tag);
 	}
-    }
-    if (action->last_failed_completion) {
-	render_leaf_datetime(node, ns, "last-failed-completion",
-			     &action->last_failed_completion);
-	render_leaf_int32(node, ns, "last-failed-status",
-			  action->last_failed_status);
-	if (action->last_failed_message) {
-	    render_leaf(node, ns, "last-failed-message",
-			action->last_failed_message);
+	for (option = action->options; option; option = option->next) {
+	    render_option(option, node, ns);
 	}
-    }
-}
-
-static void
-render_schedules(struct schedule *schedule, xmlNodePtr root, xmlNsPtr ns)
-{
-    struct tag *tag;
-    struct action *action;
-    xmlNodePtr node;
-
-    if (! schedule) {
-	return;
-    }
-
-    root = xmlNewChild(root, ns, BAD_CAST "schedules", NULL);
-    if (!root) {
-	return;
-    }
-
-    for (; schedule; schedule = schedule->next) {
-	node = xmlNewChild(root, ns, BAD_CAST "schedule", NULL);
-	if (! node) {
-	    continue;
-	}
-	render_leaf(node, ns, "name", schedule->name);
-	render_leaf(node, ns, "start", schedule->start);
-	if (schedule->flags & LMAP_SCHEDULE_FLAG_END_SET) {
-	    render_leaf(node, ns, "end", schedule->end);
-	}
-	if (schedule->flags & LMAP_SCHEDULE_FLAG_DURATION_SET) {
-	    render_leaf_uint64(node, ns, "duration", schedule->duration);
-	}
-	if (schedule->flags & LMAP_SCHEDULE_FLAG_EXEC_MODE_SET) {
-	    char *mode = NULL;
-	    switch (schedule->mode) {
-	    case LMAP_SCHEDULE_EXEC_MODE_SEQUENTIAL:
-		mode = "sequential";
-		break;
-	    case LMAP_SCHEDULE_EXEC_MODE_PARALLEL:
-		mode = "parallel";
-		break;
-	    case LMAP_SCHEDULE_EXEC_MODE_PIPELINED:
-		mode = "pipelined";
-		break;
-	    }
-	    if (mode) {
-		render_leaf(node, ns, "execution-mode", mode);
-	    }
-	}
-	for (tag = schedule->tags; tag; tag = tag->next) {
+	for (tag = action->tags; tag; tag = tag->next) {
 	    render_leaf(node, ns, "tag", tag->tag);
 	}
-	for (tag = schedule->suppression_tags; tag; tag = tag->next) {
+	for (tag = action->suppression_tags; tag; tag = tag->next) {
 	    render_leaf(node, ns, "suppression-tag", tag->tag);
 	}
-
-	for (action = schedule->actions; action; action = action->next) {
-	    render_action(action, node, ns);
-	}
     }
-}
-
-static void
-render_schedules_state(struct schedule *schedule, xmlNodePtr root, xmlNsPtr ns)
-{
-    struct action *action;
-    xmlNodePtr node;
-
-    if (! schedule) {
-	return;
-    }
-
-    root = xmlNewChild(root, ns, BAD_CAST "schedules", NULL);
-    if (!root) {
-	return;
-    }
-
-    for (; schedule; schedule = schedule->next) {
+    if (what & RENDER_CONFIG_FALSE) {
 	char *state = NULL;
-	
-	node = xmlNewChild(root, ns, BAD_CAST "schedule", NULL);
-	if (! node) {
-	    continue;
-	}
-	render_leaf(node, ns, "name", schedule->name);
-
-	switch (schedule->state) {
+	switch (action->state) {
 	case LMAP_SCHEDULE_STATE_ENABLED:
 	    state = "enabled";
 	    break;
@@ -1734,25 +1604,134 @@ render_schedules_state(struct schedule *schedule, xmlNodePtr root, xmlNsPtr ns)
 	if (state) {
 	    render_leaf(node, ns, "state", state);
 	}
-
-	render_leaf_uint64(node, ns, "storage", schedule->storage);
-	render_leaf_uint32(node, ns, "invocations", schedule->cnt_invocations);
-	render_leaf_uint32(node, ns, "suppressions", schedule->cnt_suppressions);
-	render_leaf_uint32(node, ns, "overlaps", schedule->cnt_overlaps);
-	render_leaf_uint32(node, ns, "failures", schedule->cnt_failures);
 	
-	if (schedule->last_invocation) {
+	render_leaf_uint64(node, ns, "storage", action->storage);
+	render_leaf_uint32(node, ns, "invocations", action->cnt_invocations);
+	render_leaf_uint32(node, ns, "suppressions", action->cnt_suppressions);
+	render_leaf_uint32(node, ns, "overlaps", action->cnt_overlaps);
+	render_leaf_uint32(node, ns, "failures", action->cnt_failures);
+	
+	if (action->last_invocation) {
 	    render_leaf_datetime(node, ns, "last-invocation",
-				 &schedule->last_invocation);
+				 &action->last_invocation);
 	}
-	for (action = schedule->actions; action; action = action->next) {
-	    render_action_state(action, node, ns);
+	if (action->last_completion) {
+	    render_leaf_datetime(node, ns, "last-completion",
+				 &action->last_completion);
+	    render_leaf_int32(node, ns, "last-status",
+			      action->last_status);
+	    if (action->last_message) {
+		render_leaf(node, ns, "last-message",
+			    action->last_message);
+	    }
+	}
+	if (action->last_failed_completion) {
+	    render_leaf_datetime(node, ns, "last-failed-completion",
+				 &action->last_failed_completion);
+	    render_leaf_int32(node, ns, "last-failed-status",
+			      action->last_failed_status);
+	    if (action->last_failed_message) {
+		render_leaf(node, ns, "last-failed-message",
+			    action->last_failed_message);
+	    }
 	}
     }
 }
 
 static void
-render_suppressions(struct supp *supp, xmlNodePtr root, xmlNsPtr ns)
+render_schedules(struct schedule *schedule, xmlNodePtr root, xmlNsPtr ns, int what)
+{
+    struct tag *tag;
+    struct action *action;
+    xmlNodePtr node;
+
+    if (! schedule) {
+	return;
+    }
+
+    root = xmlNewChild(root, ns, BAD_CAST "schedules", NULL);
+    if (!root) {
+	return;
+    }
+
+    for (; schedule; schedule = schedule->next) {
+	node = xmlNewChild(root, ns, BAD_CAST "schedule", NULL);
+	if (! node) {
+	    continue;
+	}
+	render_leaf(node, ns, "name", schedule->name);
+	if (what & RENDER_CONFIG_TRUE) {
+	    render_leaf(node, ns, "start", schedule->start);
+	    if (schedule->flags & LMAP_SCHEDULE_FLAG_END_SET) {
+		render_leaf(node, ns, "end", schedule->end);
+	    }
+	    if (schedule->flags & LMAP_SCHEDULE_FLAG_DURATION_SET) {
+		render_leaf_uint64(node, ns, "duration", schedule->duration);
+	    }
+	    if (schedule->flags & LMAP_SCHEDULE_FLAG_EXEC_MODE_SET) {
+		char *mode = NULL;
+		switch (schedule->mode) {
+		case LMAP_SCHEDULE_EXEC_MODE_SEQUENTIAL:
+		    mode = "sequential";
+		    break;
+		case LMAP_SCHEDULE_EXEC_MODE_PARALLEL:
+		    mode = "parallel";
+		    break;
+		case LMAP_SCHEDULE_EXEC_MODE_PIPELINED:
+		    mode = "pipelined";
+		    break;
+		}
+		if (mode) {
+		    render_leaf(node, ns, "execution-mode", mode);
+		}
+	    }
+	    for (tag = schedule->tags; tag; tag = tag->next) {
+		render_leaf(node, ns, "tag", tag->tag);
+	    }
+	    for (tag = schedule->suppression_tags; tag; tag = tag->next) {
+		render_leaf(node, ns, "suppression-tag", tag->tag);
+	    }
+	}
+	if (what & RENDER_CONFIG_FALSE) {
+	    char *state = NULL;
+	    switch (schedule->state) {
+	    case LMAP_SCHEDULE_STATE_ENABLED:
+		state = "enabled";
+		break;
+	    case LMAP_SCHEDULE_STATE_DISABLED:
+		state = "disabled";
+		break;
+	    case LMAP_SCHEDULE_STATE_RUNNING:
+		state = "running";
+	    break;
+	    case LMAP_SCHEDULE_STATE_SUPPRESSED:
+		state = "suppressed";
+		break;
+	    }
+	    if (state) {
+		render_leaf(node, ns, "state", state);
+	    }
+	    
+	    render_leaf_uint64(node, ns, "storage", schedule->storage);
+	    render_leaf_uint32(node, ns, "invocations", schedule->cnt_invocations);
+	    render_leaf_uint32(node, ns, "suppressions", schedule->cnt_suppressions);
+	    render_leaf_uint32(node, ns, "overlaps", schedule->cnt_overlaps);
+	    render_leaf_uint32(node, ns, "failures", schedule->cnt_failures);
+	    
+	    if (schedule->last_invocation) {
+		render_leaf_datetime(node, ns, "last-invocation",
+				     &schedule->last_invocation);
+	    }
+	}
+
+	for (action = schedule->actions; action; action = action->next) {
+	    render_action(action, node, ns, what);
+	}
+    }
+}
+
+static void
+render_suppressions(struct supp *supp, xmlNodePtr root, xmlNsPtr ns, int what)
 {
     struct tag *tag;
     xmlNodePtr node;
@@ -1772,67 +1751,46 @@ render_suppressions(struct supp *supp, xmlNodePtr root, xmlNsPtr ns)
 	    continue;
 	}
 	render_leaf(node, ns, "name", supp->name);
-	render_leaf(node, ns, "start", supp->start);
-	render_leaf(node, ns, "end", supp->end);
-	for (tag = supp->match; tag; tag = tag->next) {
-	    render_leaf(node, ns, "match", tag->tag);
+	if (what & RENDER_CONFIG_TRUE) {
+	    render_leaf(node, ns, "start", supp->start);
+	    render_leaf(node, ns, "end", supp->end);
+	    for (tag = supp->match; tag; tag = tag->next) {
+		render_leaf(node, ns, "match", tag->tag);
+	    }
+	    if (supp->flags & LMAP_SUPP_FLAG_STOP_RUNNING_SET) {
+		render_leaf(node, ns, "stop-running",
+			    supp->stop_running ? "true" : "false");
+	    }
 	}
-	if (supp->flags & LMAP_SUPP_FLAG_STOP_RUNNING_SET) {
-	    render_leaf(node, ns, "stop-running",
-			supp->stop_running ? "true" : "false");
-	}
-    }
-}
-
-static void
-render_suppressions_state(struct supp *supp, xmlNodePtr root, xmlNsPtr ns)
-{
-    xmlNodePtr node;
-
-    if (! supp) {
-	return;
-    }
-
-    root = xmlNewChild(root, ns, BAD_CAST "suppressions", NULL);
-    if (!root) {
-	return;
-    }
-
-    for (; supp; supp = supp->next) {
-	char *state = NULL;
-	
-	node = xmlNewChild(root, ns, BAD_CAST "suppression", NULL);
-	if (! node) {
-	    continue;
-	}
-	render_leaf(node, ns, "name", supp->name);
-
-	switch (supp->state) {
-	case LMAP_SUPP_STATE_ENABLED:
-	    state = "enabled";
-	    break;
-	case LMAP_SUPP_STATE_DISABLED:
-	    state = "disabled";
-	    break;
-	case LMAP_SUPP_STATE_ACTIVE:
-	    state = "active";
-	    break;
-	}
-	if (state) {
-	    render_leaf(node, ns, "state", state);
+	if (what & RENDER_CONFIG_FALSE) {
+	    char *state = NULL;
+	    switch (supp->state) {
+	    case LMAP_SUPP_STATE_ENABLED:
+		state = "enabled";
+		break;
+	    case LMAP_SUPP_STATE_DISABLED:
+		state = "disabled";
+		break;
+	    case LMAP_SUPP_STATE_ACTIVE:
+		state = "active";
+		break;
+	    }
+	    if (state) {
+		render_leaf(node, ns, "state", state);
+	    }
 	}
     }
 }
 
 static void
-render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns)
+render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns, int what)
 {
     struct registry *registry;
     struct option *option;
     struct tag *tag;
     xmlNodePtr node;
 
-    if (!task) {
+    if (! task) {
 	return;
     }
 
@@ -1850,18 +1808,20 @@ render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns)
 	for (registry = task->registries; registry; registry = registry->next) {
 	    render_registry(registry, node, ns);
 	}
-	render_leaf(node, ns, "program", task->program);
-	for (option = task->options; option; option = option->next) {
-	    render_option(option, node, ns);
-	}
-	for (tag = task->tags; tag; tag = tag->next) {
-	    render_leaf(node, ns, "tag", tag->tag);
+	if (what & RENDER_CONFIG_TRUE) {
+	    render_leaf(node, ns, "program", task->program);
+	    for (option = task->options; option; option = option->next) {
+		render_option(option, node, ns);
+	    }
+	    for (tag = task->tags; tag; tag = tag->next) {
+		render_leaf(node, ns, "tag", tag->tag);
+	    }
 	}
     }
 }
 
 static void
-render_events(struct event *event, xmlNodePtr root, xmlNsPtr ns)
+render_events(struct event *event, xmlNodePtr root, xmlNsPtr ns, int what)
 {
     xmlNodePtr node, subnode;
 
@@ -1880,85 +1840,90 @@ render_events(struct event *event, xmlNodePtr root, xmlNsPtr ns)
 	    continue;
 	}
 	render_leaf(node, ns, "name", event->name);
-	switch (event->type) {
-	case LMAP_EVENT_TYPE_PERIODIC:
-	    subnode = xmlNewChild(node, ns, BAD_CAST "periodic", NULL);
-	    if (! subnode) {
-		continue;
+	if (what & RENDER_CONFIG_TRUE) {
+	    if (event->flags & LMAP_EVENT_FLAG_RANDOM_SPREAD_SET) {
+		render_leaf_int32(node, ns, "random-spread", event->random_spread);
 	    }
-	    if (event->flags & LMAP_EVENT_FLAG_INTERVAL_SET) {
-		render_leaf_uint32(subnode, ns, "interval", event->interval);
+	    if (event->flags & LMAP_EVENT_FLAG_CYCLE_INTERVAL_SET) {
+		render_leaf_int32(node, ns, "cycle-interval", event->cycle_interval);
 	    }
-	    if (event->flags & LMAP_EVENT_FLAG_START_SET) {
-		render_leaf_datetime(subnode, ns, "start", &event->start);
+	    switch (event->type) {
+	    case LMAP_EVENT_TYPE_PERIODIC:
+		subnode = xmlNewChild(node, ns, BAD_CAST "periodic", NULL);
+		if (! subnode) {
+		    continue;
+		}
+		if (event->flags & LMAP_EVENT_FLAG_INTERVAL_SET) {
+		    render_leaf_uint32(subnode, ns, "interval", event->interval);
+		}
+		if (event->flags & LMAP_EVENT_FLAG_START_SET) {
+		    render_leaf_datetime(subnode, ns, "start", &event->start);
+		}
+		if (event->flags & LMAP_EVENT_FLAG_END_SET) {
+		    render_leaf_datetime(subnode, ns, "end", &event->end);
+		}
+		break;
+	    case LMAP_EVENT_TYPE_CALENDAR:
+		subnode = xmlNewChild(node, ns, BAD_CAST "calendar", NULL);
+		if (! subnode) {
+		    continue;
+		}
+		if (event->months) {
+		    render_leaf_months(subnode, ns, "month", event->months);
+		}
+		if (event->days_of_month) {
+		    render_leaf_days_of_month(subnode, ns, "day-of-month", event->days_of_month);
+		}
+		if (event->days_of_week) {
+		    render_leaf_days_of_week(subnode, ns, "day-of-week", event->days_of_week);
+		}
+		if (event->hours) {
+		    render_leaf_hours(subnode, ns, "hour", event->hours);
+		}
+		if (event->minutes) {
+		    render_leaf_minsecs(subnode, ns, "minute", event->minutes);
+		}
+		if (event->seconds) {
+		    render_leaf_minsecs(subnode, ns, "second", event->seconds);
+		}
+		if (event->flags & LMAP_EVENT_FLAG_TIMEZONE_OFFSET_SET) {
+		    char buf[42];
+		    char c = (event->timezone_offset < 0) ? '-' : '+';
+		    int16_t offset = event->timezone_offset;
+		    offset = (offset < 0) ? -1 * offset : offset;
+		    snprintf(buf, sizeof(buf), "%c%02d:%02d",
+			     c, offset / 60, offset % 60);
+		    render_leaf(subnode, ns, "timezone-offset", buf);
+		}
+		if (event->flags & LMAP_EVENT_FLAG_START_SET) {
+		    render_leaf_datetime(subnode, ns, "start", &event->start);
+		}
+		if (event->flags & LMAP_EVENT_FLAG_END_SET) {
+		    render_leaf_datetime(subnode, ns, "end", &event->end);
+		}
+		break;
+	    case LMAP_EVENT_TYPE_ONE_OFF:
+		subnode = xmlNewChild(node, ns, BAD_CAST "one-off", NULL);
+		if (! subnode) {
+		    continue;
+		}
+		if (event->flags & LMAP_EVENT_FLAG_START_SET) {
+		    render_leaf_datetime(subnode, ns, "time", &event->start);
+		}
+		break;
+	    case LMAP_EVENT_TYPE_STARTUP:
+		render_leaf(node, ns, "startup", "");
+		break;
+	    case LMAP_EVENT_TYPE_IMMEDIATE:
+		render_leaf(node, ns, "immediate", "");
+		break;
+	    case LMAP_EVENT_TYPE_CONTROLLER_LOST:
+		render_leaf(node, ns, "controller-lost", "");
+		break;
+	    case LMAP_EVENT_TYPE_CONTROLLER_CONNECTED:
+		render_leaf(node, ns, "controller-connected", "");
+		break;
 	    }
-	    if (event->flags & LMAP_EVENT_FLAG_END_SET) {
-		render_leaf_datetime(subnode, ns, "end", &event->end);
-	    }
-	    break;
-	case LMAP_EVENT_TYPE_CALENDAR:
-	    subnode = xmlNewChild(node, ns, BAD_CAST "calendar", NULL);
-	    if (! subnode) {
-		continue;
-	    }
-	    if (event->months) {
-		render_leaf_months(subnode, ns, "month", event->months);
-	    }
-	    if (event->days_of_month) {
-		render_leaf_days_of_month(subnode, ns, "day-of-month", event->days_of_month);
-	    }
-	    if (event->days_of_week) {
-		render_leaf_days_of_week(subnode, ns, "day-of-week", event->days_of_week);
-	    }
-	    if (event->hours) {
-		render_leaf_hours(subnode, ns, "hour", event->hours);
-	    }
-	    if (event->minutes) {
-		render_leaf_minsecs(subnode, ns, "minute", event->minutes);
-	    }
-	    if (event->seconds) {
-		render_leaf_minsecs(subnode, ns, "second", event->seconds);
-	    }
-	    if (event->flags & LMAP_EVENT_FLAG_TIMEZONE_OFFSET_SET) {
-		char buf[42];
-		char c = (event->timezone_offset < 0) ? '-' : '+';
-		int16_t offset = event->timezone_offset;
-		offset = (offset < 0) ? -1 * offset : offset;
-		snprintf(buf, sizeof(buf), "%c%02d:%02d",
-			 c, offset / 60, offset % 60);
-		render_leaf(subnode, ns, "timezone-offset", buf);
-	    }
-	    if (event->flags & LMAP_EVENT_FLAG_START_SET) {
-		render_leaf_datetime(subnode, ns, "start", &event->start);
-	    }
-	    if (event->flags & LMAP_EVENT_FLAG_END_SET) {
-		render_leaf_datetime(subnode, ns, "end", &event->end);
-	    }
-	    break;
-	case LMAP_EVENT_TYPE_ONE_OFF:
-	    subnode = xmlNewChild(node, ns, BAD_CAST "one-off", NULL);
-	    if (! subnode) {
-		continue;
-	    }
-	    if (event->flags & LMAP_EVENT_FLAG_START_SET) {
-		render_leaf_datetime(subnode, ns, "time", &event->start);
-	    }
-	    break;
-	case LMAP_EVENT_TYPE_STARTUP:
-	    render_leaf(node, ns, "startup", "");
-	    break;
-	case LMAP_EVENT_TYPE_IMMEDIATE:
-	    render_leaf(node, ns, "immediate", "");
-	    break;
-	case LMAP_EVENT_TYPE_CONTROLLER_LOST:
-	    render_leaf(node, ns, "controller-lost", "");
-	    break;
-	case LMAP_EVENT_TYPE_CONTROLLER_CONNECTED:
-	    render_leaf(node, ns, "controller-connected", "");
-	    break;
-	}
-	if (event->flags & LMAP_EVENT_FLAG_RANDOM_SPREAD_SET) {
-	    render_leaf_int32(node, ns, "random-spread", event->random_spread);
 	}
     }
 }
@@ -2030,19 +1995,8 @@ render_results(struct result *res, xmlNodePtr root, xmlNsPtr ns)
     }
 }
 
-/**
- * @brief Returns an XML rendering of the lmap configuration
- *
- * This function renders the current lmap configuration into an XML
- * document according to the IETF's LMAP YANG data model.
- *
- * @param lmap The pointer to the lmap config to be rendered.
- * @return An XML document as a string that must be freed by the
- *         caller or NULL on error
- */
-
-char *
-lmap_xml_render_config(struct lmap *lmap)
+static char*
+render_control(struct lmap *lmap, int what)
 {
     xmlDocPtr doc;
     xmlNodePtr root, node;
@@ -2058,7 +2012,8 @@ lmap_xml_render_config(struct lmap *lmap)
 	goto exit;
     }
 
-    root = xmlNewNode(NULL, BAD_CAST "config");
+    root = xmlNewNode(NULL, BAD_CAST
+		      ((what & RENDER_CONFIG_FALSE) ? "data" : "config"));
     if (! root) {
 	goto exit;
     }
@@ -2074,11 +2029,12 @@ lmap_xml_render_config(struct lmap *lmap)
 	goto exit;
     }
     
-    render_agent(lmap->agent, node, ns);
-    render_schedules(lmap->schedules, node, ns);
-    render_suppressions(lmap->supps, node, ns);
-    render_tasks(lmap->tasks, node, ns);
-    render_events(lmap->events, node, ns);
+    render_agent(lmap->agent, node, ns, what);
+    render_capabilities(lmap->capabilities, node, ns, what);
+    render_tasks(lmap->tasks, node, ns, what);
+    render_schedules(lmap->schedules, node, ns, what);
+    render_suppressions(lmap->supps, node, ns, what);
+    render_events(lmap->events, node, ns, what);
 
     xmlDocDumpFormatMemoryEnc(doc, &p, &len, "UTF-8", 1);
     if (p) {
@@ -2090,6 +2046,23 @@ exit:
     if (doc) xmlFreeDoc(doc);
     xmlCleanupParser();
     return config;
+}
+
+/**
+ * @brief Returns an XML rendering of the lmap configuration
+ *
+ * This function renders the current lmap configuration into an XML
+ * document according to the IETF's LMAP YANG data model.
+ *
+ * @param lmap The pointer to the lmap config to be rendered.
+ * @return An XML document as a string that must be freed by the
+ *         caller or NULL on error
+ */
+
+char *
+lmap_xml_render_config(struct lmap *lmap)
+{
+    return render_control(lmap, RENDER_CONFIG_TRUE);
 }
 
 /**
@@ -2106,50 +2079,7 @@ exit:
 char *
 lmap_xml_render_state(struct lmap *lmap)
 {
-    xmlDocPtr doc;
-    xmlNodePtr root, node;
-    xmlNsPtr ns = NULL;
-    char *config = NULL;
-    xmlChar *p = NULL;
-    int len = 0;
-
-    assert(lmap);
-
-    doc = xmlNewDoc(BAD_CAST "1.0");
-    if (doc == NULL) {
-	goto exit;
-    }
-
-    root = xmlNewNode(NULL, BAD_CAST "data");
-    if (! root) {
-	goto exit;
-    }
-    xmlDocSetRootElement(doc, root);
-    
-    ns = xmlNewNs(root, BAD_CAST LMAPC_NAMESPACE, BAD_CAST LMAPC_PREFIX);
-    if (ns == NULL) {
-	goto exit;
-    }
-    
-    node = xmlNewChild(root, ns, BAD_CAST "lmap-state", NULL);
-    if (! node) {
-	goto exit;
-    }
-    
-    render_agent_state(lmap->agent, node, ns);
-    render_schedules_state(lmap->schedules, node, ns);
-    render_suppressions_state(lmap->supps, node, ns);
-
-    xmlDocDumpFormatMemoryEnc(doc, &p, &len, "UTF-8", 1);
-    if (p) {
-	config = strdup((char *) p);
-	xmlFree(p);
-    }
-
-exit:
-    if (doc) xmlFreeDoc(doc);
-    xmlCleanupParser();
-    return config;
+    return render_control(lmap, (RENDER_CONFIG_TRUE | RENDER_CONFIG_FALSE));
 }
 
 /**

@@ -640,7 +640,6 @@ lmap_agent_free(struct agent *agent)
         xfree(agent->agent_id);
 	xfree(agent->group_id);
 	xfree(agent->measurement_point);
-	xfree(agent->version);
 	xfree(agent);
     }
 }
@@ -734,7 +733,8 @@ lmap_agent_set_report_group_id(struct agent *agent, const char *value)
     return ret;
 }
 
-int lmap_agent_set_report_measurement_point(struct agent *agent, const char *value)
+int
+lmap_agent_set_report_measurement_point(struct agent *agent, const char *value)
 {
     int ret;
     
@@ -745,7 +745,8 @@ int lmap_agent_set_report_measurement_point(struct agent *agent, const char *val
     return ret;
 }
 
-int lmap_agent_set_controller_timeout(struct agent *agent, const char *value)
+int
+lmap_agent_set_controller_timeout(struct agent *agent, const char *value)
 {
     int ret;
     
@@ -756,14 +757,54 @@ int lmap_agent_set_controller_timeout(struct agent *agent, const char *value)
     return ret;
 }
 
-int lmap_agent_set_version(struct agent *agent, const char *value)
-{
-    return set_string(&agent->version, value, __FUNCTION__);
-}
-
-int lmap_agent_set_last_started(struct agent *agent, const char *value)
+int
+lmap_agent_set_last_started(struct agent *agent, const char *value)
 {
     return set_dateandtime(&agent->last_started, value, __FUNCTION__);
+}
+
+/*
+ * struct capability functions...
+ */
+
+struct capability*
+lmap_capability_new()
+{
+    struct capability *capability;
+
+    capability = (struct capability*) xcalloc(1, sizeof(struct capability), __FUNCTION__);
+    return capability;
+}
+
+void
+lmap_capability_free(struct capability *capability)
+{
+    if (capability) {
+	xfree(capability->version);
+	xfree(capability);
+    }
+}
+
+int
+lmap_capability_valid(struct lmap *lmap, struct capability *capability)
+{
+    int valid = 1;
+
+    UNUSED(lmap);
+
+    return valid;
+}
+
+int
+lmap_capability_set_version(struct capability *capability, const char *value)
+{
+    return set_string(&capability->version, value, __FUNCTION__);
+}
+
+int
+lmap_capability_add_tag(struct capability *capability, const char *value)
+{
+    return add_tag(&capability->tags, value, __FUNCTION__);
 }
 
 /*
@@ -1234,6 +1275,18 @@ lmap_event_set_random_spread(struct event *event, const char *value)
 	} else {
 	    event->flags |= LMAP_EVENT_FLAG_RANDOM_SPREAD_SET;
 	}
+    }
+    return ret;
+}
+
+int
+lmap_event_set_cycle_interval(struct event *event, const char *value)
+{
+    int ret;
+    
+    ret = set_uint32(&event->cycle_interval, value, __FUNCTION__);
+    if (ret == 0) {
+	event->flags |= LMAP_EVENT_FLAG_CYCLE_INTERVAL_SET;
     }
     return ret;
 }

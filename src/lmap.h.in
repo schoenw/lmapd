@@ -33,12 +33,13 @@
  */
 
 struct lmap {
-    struct agent     *agent;
-    struct schedule  *schedules;
-    struct supp      *supps;
-    struct event     *events;
-    struct task      *tasks;
-    struct result    *results;
+    struct agent      *agent;
+    struct capability *capabilities;
+    struct schedule   *schedules;
+    struct supp       *supps;
+    struct event      *events;
+    struct task       *tasks;
+    struct result     *results;
 };
 
 extern struct lmap * lmap_new();
@@ -70,7 +71,6 @@ struct agent {
     uint32_t controller_timeout;	/* seconds */
     uint32_t flags;			/* see below */
 
-    char *version;
     time_t last_started;
 };
 
@@ -89,8 +89,25 @@ extern int lmap_agent_set_report_agent_id(struct agent *agent, const char *value
 extern int lmap_agent_set_report_group_id(struct agent *agent, const char *value);
 extern int lmap_agent_set_report_measurement_point(struct agent *agent, const char *value);
 extern int lmap_agent_set_controller_timeout(struct agent *agent, const char *value);
-extern int lmap_agent_set_version(struct agent *agent, const char *value);
 extern int lmap_agent_set_last_started(struct agent *agent, const char *value);
+
+/**
+ * A struct capability is used to hold all config and state
+ * information related to capabilities.
+ */
+
+struct capability {
+    struct task *tasks;
+    char *version;
+    struct tag *tags;
+};
+
+extern struct capability * lmap_capability_new();
+extern void lmap_capability_free(struct capability *capabilities);
+extern int lmap_capability_valid(struct lmap *lmap, struct capability *capabilities);
+extern int lmap_capability_add_task(struct capability *capabilities, struct task *task);
+extern int lmap_capability_set_version(struct capability *capabilities, const char *value);
+extern int lmap_capability_add_tag(struct capability *capability, const char *value);
 
 /**
  * A struct suppression is used to hold all config and state
@@ -356,6 +373,7 @@ struct event {
     time_t start;
     time_t end;
     uint32_t random_spread;	/* must be < RAND_MAX */
+    uint32_t cycle_interval;	/* seconds */
     
     uint16_t months;		/* bit set months */
     uint32_t days_of_month;	/* bit set day of month */
@@ -383,7 +401,8 @@ struct event {
 #define LMAP_EVENT_FLAG_START_SET		0x02
 #define LMAP_EVENT_FLAG_END_SET			0x04
 #define LMAP_EVENT_FLAG_RANDOM_SPREAD_SET	0x08
-#define LMAP_EVENT_FLAG_TIMEZONE_OFFSET_SET	0x10
+#define LMAP_EVENT_FLAG_CYCLE_INTERVAL_SET	0x10
+#define LMAP_EVENT_FLAG_TIMEZONE_OFFSET_SET	0x20
 
 extern struct event * lmap_event_new();
 extern void lmap_event_free(struct event *event);
@@ -394,6 +413,7 @@ extern int lmap_event_set_interval(struct event *event, const char *value);
 extern int lmap_event_set_start(struct event *event, const char *value);
 extern int lmap_event_set_end(struct event *event, const char *value);
 extern int lmap_event_set_random_spread(struct event *event, const char *value);
+extern int lmap_event_set_cycle_interval(struct event *event, const char *value);
 extern int lmap_event_add_month(struct event *event, const char *value);
 extern int lmap_event_add_day_of_month(struct event *event, const char *value);
 extern int lmap_event_add_day_of_week(struct event *event, const char *value);
