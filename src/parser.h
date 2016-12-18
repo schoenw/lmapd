@@ -39,5 +39,6 @@ extern int lmap_xml_parse_report_string(struct lmap *lmap, const char *string);
 extern char * lmap_xml_render_config(struct lmap *lmap);
 extern char * lmap_xml_render_state(struct lmap *lmap);
 extern char * lmap_xml_render_report(struct lmap *lmap);
+extern char * lmap_xml_render_result(struct result *res);
 
 #endif

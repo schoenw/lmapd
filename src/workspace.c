@@ -36,12 +36,6 @@
 #include "utils.h"
 #include "workspace.h"
 
-#define JSON
-    
-#ifdef JSON
-#include <json.h>
-#endif
-
 /**
  * @brief Append a field to a CSV file
  *
@@ -86,9 +80,34 @@ csv_append(FILE *file, char delimiter, const char *s)
     }
 }
 
+/**
+ * @brief End a record in a CSV file
+ *
+ * Ends a record (aka line) in a CSV file.
+ *
+ * @param file pointer to the open FILE stream
+ */
+
+static void
+csv_end(FILE *file)
+{
+    fprintf(file, "\n");
+}
+
+static void
+csv_append_key_value(FILE *file, char delimiter,
+		     const char *key, const char *value)
+{
+    if (key && value) {
+	csv_append(file, 0, key);
+	csv_append(file, delimiter, value);
+	csv_end(file);
+    }
+}
+
 /* XXX buffer overflow checks */
 
-char*
+static char*
 csv_next(FILE *file, char delimiter)
 {
     int c, i, quoted = 0;
@@ -138,18 +157,20 @@ csv_next(FILE *file, char delimiter)
     return buf;
 }
 
-/**
- * @brief End a record in a CSV file
- *
- * Ends a record (aka line) in a CSV file.
- *
- * @param file pointer to the open FILE stream
- */
-
 static void
-csv_end(FILE *file)
+csv_read_key_value(FILE *file, char delimiter, char **key, char **value)
 {
-    fprintf(file, "\n");
+    char *s;
+    if (!feof(file)) {
+	while ((s = csv_next(file, delimiter)) == NULL) ;
+	if (key && s) {
+	    *key = strdup(s);
+	}
+	s = csv_next(file, delimiter);
+	if (value && s) {
+	    *value = strdup(s);
+	}
+    }
 }
 
 /**
@@ -502,6 +523,7 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
     FILE *f;
     char buf[128];
     struct option *option;
+    struct tag *tag;
     const char delimiter = ';';
     
     assert(action && action->name && action->workspace);
@@ -519,40 +541,38 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
 	return -1;
     }
     
-    snprintf(buf, sizeof(buf), "%s.%d.%d",
-	     "LMAPD", LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
-    csv_append(f, 0, buf);
-    snprintf(buf, sizeof(buf), "%lu", action->last_invocation);
-    csv_append(f, delimiter, buf);
-    csv_append(f, delimiter, "OK");
-    csv_append(f, delimiter, action->name ? schedule->name : "");
-    csv_append(f, delimiter, action->name ? action->name : "");
-    csv_append(f, delimiter, action->task ? action->task : "");
+    snprintf(buf, sizeof(buf), "%s-%d.%d",
+	     "lmapd", LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
+    csv_append_key_value(f, delimiter, "magic", buf);
+    csv_append_key_value(f, delimiter, "schedule", schedule->name);
+    csv_append_key_value(f, delimiter, "action", action->name);
+    csv_append_key_value(f, delimiter, "task", task->name);
     for (option = task->options; option; option = option->next) {
-	csv_append(f, delimiter, option->id ? option->id : "");
-	csv_append(f, delimiter, option->name ? option->name : "");
-	csv_append(f, delimiter, option->value ? option->value : "");
+	csv_append_key_value(f, delimiter, "option-id", option->id);
+	csv_append_key_value(f, delimiter, "option-name", option->name);
+	csv_append_key_value(f, delimiter, "option-value", option->value);
     }
     for (option = action->options; option; option = option->next) {
-	csv_append(f, delimiter, option->id ? option->id : "");
-	csv_append(f, delimiter, option->name ? option->name : "");
-	csv_append(f, delimiter, option->value ? option->value : "");
+	csv_append_key_value(f, delimiter, "option-id", option->id);
+	csv_append_key_value(f, delimiter, "option-name", option->name);
+	csv_append_key_value(f, delimiter, "option-value", option->value);
     }
-    csv_end(f);
+    for (tag = task->tags; tag; tag = tag->next) {
+	csv_append_key_value(f, delimiter, "tag", tag->tag);
+    }
+    for (tag = schedule->tags; tag; tag = tag->next) {
+	csv_append_key_value(f, delimiter, "tag", tag->tag);
+    }
+    for (tag = action->tags; tag; tag = tag->next) {
+	csv_append_key_value(f, delimiter, "tag", tag->tag);
+    }
+    snprintf(buf, sizeof(buf), "%lu", schedule->last_invocation);
+    csv_append_key_value(f, delimiter, "event", buf);
+    snprintf(buf, sizeof(buf), "%lu", action->last_invocation);
+    csv_append_key_value(f, delimiter, "start", buf);
+    /* TODO cycle-number */
+    /* TODO conflict */
     (void) fclose(f);
-
-#ifdef JSON
-    json_object * jobj = json_object_new_object();
-    json_object_object_add(jobj, "schedule",
-	   json_object_new_string(schedule->name ? schedule->name : ""));
-    json_object_object_add(jobj, "action",
-	   json_object_new_string(action->name ? action->name : ""));
-    json_object_object_add(jobj, "task",
-	   json_object_new_string(action->task ? action->task : ""));
-    fprintf(stderr, "** >>> %s <<<\n", json_object_to_json_string(jobj));
-    json_object_put(jobj);
-#endif
-    
     return 0;
 }
 
@@ -578,15 +598,11 @@ lmapd_workspace_action_meta_add_end(struct schedule *schedule, struct action *ac
 	return -1;
     }
     
-    snprintf(buf, sizeof(buf), "%s.%d.%d",
-	     "LMAPD", LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
-    csv_append(f, 0, buf);
     snprintf(buf, sizeof(buf), "%lu", action->last_completion);
-    csv_append(f, delimiter, buf);
-    csv_append(f, delimiter, action->last_status == 0 ? "OK" : "FAIL");
+    csv_append_key_value(f, delimiter, "end", buf);
     snprintf(buf, sizeof(buf), "%d", action->last_status);
-    csv_append(f, delimiter, buf);
-    csv_end(f);
+    csv_append_key_value(f, delimiter, "status", buf);
+    /* TODO conflicts */
     (void) fclose(f);
     return 0;
 }
@@ -644,7 +660,7 @@ read_table(int fd)
 
     file = fdopen(fd, "r");
     if (! file) {
-	lmap_err("failed to create file stream");
+	lmap_err("failed to create file stream: %s", strerror(errno));
 	return NULL;
     }
 
@@ -687,84 +703,80 @@ read_table(int fd)
     return tab;
 }
 
-static int
-check_tag(struct result *res, const char *value)
-{
-    if (strcmp(value, "LMAPD-0.3")) {
-	lmap_wrn("unexpected tag '%s' in report file", value);
-	return -1;
-    }
-    return 0;
-}
-
-static int
-check_status(struct result *res, const char *value)
-{
-    if (strcmp(value, "OK") && strcmp(value, "FAIL")) {
-	lmap_wrn("unexpected status '%s' in report file", value);
-	return -1;
-    }
-    return 0;
-}
-
 static struct result *
 read_result(int fd)
 {
+    FILE *file;
     struct result *res;
-    struct table *tab;
-    struct row *row;
-    struct value *val;
-    int r, c;
+    char *key, *value;
+    struct option *opt = NULL;
 
-    int (*r0[])(struct result *res, const char *c) = {
-	check_tag,
-	lmap_result_set_start,
-	check_status,
-	lmap_result_set_schedule,
-	lmap_result_set_action,
-	lmap_result_set_task,
-	NULL
-    };
-		
-    int (*r1[])(struct result *res, const char *c) = {
-	check_tag,
-	lmap_result_set_end,
-	check_status,
-	lmap_result_set_status,
-	NULL
-    };
-
-    tab = read_table(fd);
-    if (! tab) {
+    file = fdopen(fd, "r");
+    if (! file) {
+	lmap_err("failed to create file stream: %s", strerror(errno));
 	return NULL;
     }
 
     res = lmap_result_new();
     if (! res) {
-	lmap_table_free(tab);
+	(void) fclose(file);
 	return NULL;
     }
 
-    for (r = 0, row = tab->rows; row; row = row->next, r++) {
-	for (c = 0, val = row->values; val; val = val->next, c++) {
-	    lmap_dbg("** tab[%d,%d] = >%s<", r, c, val->value);
-	    if (r == 0 && c < sizeof(r0)/sizeof(r0[0])-1) {
-		if (r0[c](res, val->value) == -1) {
-		    lmap_result_free(res);
-		    lmap_table_free(tab);
-		    return NULL;
-		}
+    while (!feof(file)) {
+	key = NULL;
+	value = NULL;
+	csv_read_key_value(file, ';', &key, &value);
+	if (key && value) {
+	    if (! strcmp(key, "schedule")) {
+		lmap_result_set_schedule(res, value);
 	    }
-	    if (r == 1 && c < sizeof(r1)/sizeof(r1[0])-1) {
-		if (r1[c](res, val->value) == -1) {
-		    lmap_result_free(res);
-		    lmap_table_free(tab);
-		    return NULL;
+	    if (! strcmp(key, "action")) {
+		lmap_result_set_action(res, value);
+	    }
+	    if (! strcmp(key, "task")) {
+		lmap_result_set_task(res, value);
+	    }
+	    if (! strcmp(key, "option-id")) {
+		if (opt) {
+		    lmap_result_add_option(res, opt);
 		}
+		opt = lmap_option_new();
+		if (opt) lmap_option_set_id(opt, value);
+	    }
+	    if (! strcmp(key, "option-name")) {
+		if (opt) lmap_option_set_name(opt, value);
+	    }
+	    if (! strcmp(key, "option-value")) {
+		if (opt) lmap_option_set_value(opt, value);
+	    }
+	    if (! strcmp(key, "tag")) {
+		lmap_result_add_tag(res, value);
+	    }
+	    if (! strcmp(key, "event")) {
+		lmap_result_set_event(res, value);
+	    }
+	    if (! strcmp(key, "start")) {
+		lmap_result_set_start(res, value);
+	    }
+	    if (! strcmp(key, "end")) {
+		lmap_result_set_end(res, value);
+	    }
+	    if (! strcmp(key, "cycle-number")) {
+		lmap_result_set_cycle_number(res, value);
+	    }
+	    if (! strcmp(key, "status")) {
+		lmap_result_set_status(res, value);
 	    }
 	}
+	if (key) free(key);
+	if (value) free(value);
+    }
+    if (opt) {
+	lmap_result_add_option(res, opt);
     }
 
+    (void) fclose(file);
     return res;
 }
 
@@ -791,17 +803,20 @@ lmapd_workspace_read_results(struct lmapd *lmapd)
 	if (! p) {
 	    continue;
 	}
+
 	if (!strcmp(p, ".meta")) {
 	    int mfd, dfd;
 	    mfd = open(dp->d_name, O_RDONLY);
-	    if (! mfd) {
-		lmap_err("failed to open meta file '%s'", dp->d_name);
+	    if (mfd == -1) {
+		lmap_err("failed to open meta file '%s': %s",
+			 dp->d_name, strerror(errno));
 		continue;
 	    }
 	    strcpy(p, ".data");
 	    dfd = open(dp->d_name, O_RDONLY);
-	    if (! dfd) {
-		lmap_err("failed to open data file '%s'", dp->d_name);
+	    if (dfd == -1) {
+		lmap_err("failed to open data file '%s': %s",
+			 dp->d_name, strerror(errno));
 		(void) close(mfd);
 		continue;
 	    }

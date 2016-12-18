@@ -2368,6 +2368,11 @@ void
 lmap_result_free(struct result *res)
 {
     if (res) {
+	xfree(res->schedule);
+	xfree(res->action);
+	xfree(res->task);
+	free_all_options(res->options);
+	free_all_tags(res->tags);
 	while (res->tables) {
 	    struct table *tab = res->tables;
 	    res->tables = tab->next;
@@ -2424,6 +2429,32 @@ lmap_result_set_task(struct result *res, const char *value)
 }
 
 int
+lmap_result_add_option(struct result *res, struct option *option)
+{
+    return add_option(&res->options, option, __FUNCTION__);
+}
+
+int
+lmap_result_add_tag(struct result *res, const char *value)
+{
+    return add_tag(&res->tags, value, __FUNCTION__);
+}
+
+int
+lmap_result_set_event(struct result *res, const char *value)
+{
+    uint32_t u;
+    int ret;
+    
+    ret = set_uint32(&u, value, __FUNCTION__);
+    if (ret == 0) {
+	res->event = u;
+    }
+    
+    return ret;
+}
+
+int
 lmap_result_set_start(struct result *res, const char *value)
 {
     uint32_t u;
@@ -2452,6 +2483,12 @@ lmap_result_set_end(struct result *res, const char *value)
 }
 
 int
+lmap_result_set_cycle_number(struct result *res, const char *value)
+{
+    return set_string(&res->cycle_number, value, __FUNCTION__);
+}
+
+int
 lmap_result_set_status(struct result *res, const char *value)
 {
     int32_t i;
@@ -2460,6 +2497,7 @@ lmap_result_set_status(struct result *res, const char *value)
     ret = set_int32(&i, value, __FUNCTION__);
     if (ret == 0) {
 	res->status = i;
+	res->flags |= LMAP_RESULT_FLAG_STATUS_SET;
     }
 
     return ret;

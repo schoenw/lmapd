@@ -1961,37 +1961,46 @@ render_table(struct table *tab, xmlNodePtr root, xmlNsPtr ns)
 }
 
 static void
-render_results(struct result *res, xmlNodePtr root, xmlNsPtr ns)
+render_result(struct result *res, xmlNodePtr root, xmlNsPtr ns)
 {
     xmlNodePtr node;
+    struct option *option;
+    struct tag *tag;
     struct table *tab;
     
-    for (; res; res = res->next) {
-	node = xmlNewChild(root, ns, BAD_CAST "result", NULL);
-	if (!node) {
-	    continue;
-	}
+    node = xmlNewChild(root, ns, BAD_CAST "result", NULL);
+    if (!node) {
+	return;
+    }
+    
+    render_leaf(node, ns, "schedule", res->schedule);
+    render_leaf(node, ns, "action", res->action);
+    render_leaf(node, ns, "task", res->task);
+    for (option = res->options; option; option = option->next) {
+	render_option(option, node, ns);
+    }
+    for (tag = res->tags; tag; tag = tag->next) {
+	render_leaf(node, ns, "tag", tag->tag);
+    }
+    
+    if (res->event) {
+	render_leaf_datetime(node, ns, "event", &res->start);
+    }
+    
+    if (res->start) {
+	render_leaf_datetime(node, ns, "start", &res->start);
+    }
+    
+    if (res->end) {
+	render_leaf_datetime(node, ns, "end", &res->end);
+    }
 
-	if (res->schedule) {
-	}
-
-	render_leaf(node, ns, "schedule", res->schedule);
-	render_leaf(node, ns, "action", res->action);
-	render_leaf(node, ns, "task", res->task);
-
-	if (res->start) {
-	    render_leaf_datetime(node, ns, "start", &res->start);
-	}
-
-	if (res->end) {
-	    render_leaf_datetime(node, ns, "end", &res->end);
-	}
-
+    if (res->flags & LMAP_RESULT_FLAG_STATUS_SET) {
 	render_leaf_int32(node, ns, "status", res->status);
-
-	for (tab = res->tables; tab; tab = tab->next) {
-	    render_table(tab, node, ns);
-	}
+    }
+    
+    for (tab = res->tables; tab; tab = tab->next) {
+	render_table(tab, node, ns);
     }
 }
 
@@ -2102,6 +2111,7 @@ lmap_xml_render_report(struct lmap *lmap)
     char *config = NULL;
     xmlChar *p = NULL;
     int len = 0;
+    struct result *res;
 
     assert(lmap);
 
@@ -2125,8 +2135,14 @@ lmap_xml_render_report(struct lmap *lmap)
     if (! node) {
 	goto exit;
     }
+    node = xmlNewChild(node, ns, BAD_CAST "input", NULL);
+    if (! node) {
+	goto exit;
+    }
     render_agent_report(lmap->agent, node, ns);
-    render_results(lmap->results, node, ns);
+    for (res = lmap->results; res; res = res->next) {
+	render_result(res, node, ns);
+    }
     xmlDocDumpFormatMemoryEnc(doc, &p, &len, "UTF-8", 1);
     if (p) {
 	config = strdup((char *) p);
@@ -2138,3 +2154,45 @@ exit:
     xmlCleanupParser();
     return config;
 }
+
+char *
+lmap_xml_render_result(struct result *res)
+{
+    xmlDocPtr doc;
+    xmlNodePtr root;
+    xmlNsPtr ns = NULL;
+    char *config = NULL;
+    xmlChar *p = NULL;
+    int len = 0;
+
+    assert(res);
+
+    doc = xmlNewDoc(BAD_CAST "1.0");
+    if (doc == NULL) {
+	goto exit;
+    }
+
+    root = xmlNewNode(NULL, BAD_CAST "meta");
+    if (! root) {
+	goto exit;
+    }
+    xmlDocSetRootElement(doc, root);
+    
+    ns = xmlNewNs(root, BAD_CAST LMAPR_NAMESPACE, BAD_CAST LMAPR_PREFIX);
+    if (ns == NULL) {
+	goto exit;
+    }
+
+    render_result(res, root, ns);
+    xmlDocDumpFormatMemoryEnc(doc, &p, &len, "UTF-8", 1);
+    if (p) {
+	config = strdup((char *) p);
+	xmlFree(p);
+    }
+
+exit:
+    if (doc) xmlFreeDoc(doc);
+    xmlCleanupParser();
+    return config;
+}
+

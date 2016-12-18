@@ -243,7 +243,7 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
     }
 
     /*
-     * Pass some information to the via the environment; this is
+     * Pass some information to the task via the environment; this is
      * necessary so that a reporter can create a proper report.
      */
 #if 0

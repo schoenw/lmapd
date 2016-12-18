@@ -83,8 +83,6 @@ $ genhtml app.info
  - Implement calendar/timezone-offset
  - Implement suppression/suppress-by-default
  - Implement pipelined execution mode
- - Unify the reporting of measurement results
- - Store action meta-data in a key: value format instead of a csv format
 
 
 ### Acknowledgments

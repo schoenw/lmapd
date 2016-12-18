@@ -429,13 +429,20 @@ struct result {
     char *schedule;
     char *action;
     char *task;
+    struct option *options;
+    struct tag *tags;
+    time_t event;
     time_t start;
     time_t end;
+    char *cycle_number;
     int32_t status;
     struct meta *meta;
     struct table *tables;
+    uint32_t flags;			/* see below */
     struct result *next;
 };
+
+#define LMAP_RESULT_FLAG_STATUS_SET	0x01
 
 extern struct result * lmap_result_new();
 extern void lmap_result_free(struct result *res);
@@ -444,8 +451,12 @@ extern int lmap_result_add_table(struct result *res, struct table *tab);
 extern int lmap_result_set_schedule(struct result *res, const char *value);
 extern int lmap_result_set_action(struct result *res, const char *value);
 extern int lmap_result_set_task(struct result *res, const char *value);
+extern int lmap_result_add_option(struct result *res, struct option *option);
+extern int lmap_result_add_tag(struct result *res, const char *value);
+extern int lmap_result_set_event(struct result *res, const char *value);
 extern int lmap_result_set_start(struct result *res, const char *value);
 extern int lmap_result_set_end(struct result *res, const char *value);
+extern int lmap_result_set_cycle_number(struct result *res, const char *value);
 extern int lmap_result_set_status(struct result *res, const char *value);
   
 struct table {
