@@ -1995,6 +1995,10 @@ render_result(struct result *res, xmlNodePtr root, xmlNsPtr ns)
 	render_leaf_datetime(node, ns, "end", &res->end);
     }
 
+    if (res->cycle_number) {
+	render_leaf(node, ns, "cycle-number", res->cycle_number);
+    }
+
     if (res->flags & LMAP_RESULT_FLAG_STATUS_SET) {
 	render_leaf_int32(node, ns, "status", res->status);
     }

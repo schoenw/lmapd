@@ -78,7 +78,6 @@ $ genhtml app.info
 
  - Fix lmapctl timezone bug
  - Implement capabilities/task
- - Implement cycle-number
  - Implement schedule/duration
  - Implement calendar/timezone-offset
  - Implement suppression/suppress-by-default
@@ -89,6 +88,7 @@ $ genhtml app.info
 
 The following people have helped with suggestions and ideas:
 
+- Vlad Ungureanu
 - Vaibhav Bajpai
 - Jürgen Schönwälder
 - Roxana Nadrag

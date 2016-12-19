@@ -570,7 +570,12 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
     csv_append_key_value(f, delimiter, "event", buf);
     snprintf(buf, sizeof(buf), "%lu", action->last_invocation);
     csv_append_key_value(f, delimiter, "start", buf);
-    /* TODO cycle-number */
+    if (schedule->cycle_number) {
+	struct tm *tmp;
+	tmp = gmtime(&schedule->cycle_number);
+	strftime(buf, sizeof(buf), "%Y%m%d.%H%M%S", tmp);
+	csv_append_key_value(f, delimiter, "cycle-number", buf);
+    }
     /* TODO conflict */
     (void) fclose(f);
     return 0;

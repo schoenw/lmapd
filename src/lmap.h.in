@@ -270,6 +270,7 @@ struct schedule {
     char *name;
     char *start;		/* event-ref */
     char *end;			/* event-ref */
+    time_t cycle_number;
     uint64_t duration;
     uint8_t mode;
     uint32_t flags;

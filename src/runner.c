@@ -658,6 +658,15 @@ execute_cb(struct lmapd *lmapd, struct event *event)
 		sched->cnt_overlaps++;
 		goto next;
 	    }
+
+	    sched->cycle_number = 0;
+	    if (event->flags & LMAP_EVENT_FLAG_CYCLE_INTERVAL_SET
+		&& event->cycle_interval) {
+		struct timeval t;
+		event_base_gettimeofday_cached(lmapd->base, &t);
+		sched->cycle_number = (t.tv_sec / event->cycle_interval) * event->cycle_interval;
+	    }
+	    
 	    schedule_exec(lmapd, sched);
 	    if (event->type == LMAP_EVENT_TYPE_ONE_OFF
 		|| event->type == LMAP_EVENT_TYPE_IMMEDIATE
