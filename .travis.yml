@@ -1,0 +1,20 @@
+dist: trusty
+sudo: required
+language: c
+compiler: gcc
+
+before_install:
+  - sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libevent-dev cmake cmake-data pkg-config libxml2-dev libjson-c-dev check
+
+script:
+  - mkdir -p build
+  - cd build && cmake ..
+  - make
+  - make test
+  - make doc
+
+branches:
+  except:
+    - experimental
