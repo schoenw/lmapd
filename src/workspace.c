@@ -36,6 +36,24 @@
 #include "utils.h"
 #include "workspace.h"
 
+static void *
+xrealloc(void *ptr, size_t size, const char *func)
+{
+    char *p = realloc(ptr, size);
+    if (!p) {
+        lmap_log(LOG_ERR, func, "failed to allocate memory");
+    }
+    return p;
+}
+
+static void
+xfree(void *ptr)
+{
+    if (ptr) {
+        free(ptr);
+    }
+}
+
 /**
  * @brief Append a field to a CSV file
  *
@@ -105,18 +123,16 @@ csv_append_key_value(FILE *file, char delimiter,
     }
 }
 
-/* XXX buffer overflow checks */
-
 static char*
 csv_next(FILE *file, char delimiter)
 {
     int c, i, quoted = 0;
-    static char buf[1234];
+    size_t size = 0;
+    char *buf = NULL;
     const char quote = '"';
 
     i = 0;
     while ((c = fgetc(file)) != EOF) {
-	// lmap_dbg(".. %c", c);
 	if (!quoted && c == delimiter) {
 	    break;
 	}
@@ -134,6 +150,10 @@ csv_next(FILE *file, char delimiter)
 	if (i == 0 && c == quote) {
 	    quoted = 1;
 	    continue;
+	}
+	if (i >= size) {
+	    size += 64;
+	    buf = xrealloc(buf, size, __FUNCTION__);
 	}
 	if (c == quote) {
 	    if (quoted) {
@@ -153,7 +173,13 @@ csv_next(FILE *file, char delimiter)
 	i++;
     }
 
-    buf[i] = 0;
+    if (buf) {
+	if (i >= size) {
+	    size += 2;
+	    buf = xrealloc(buf, size, __FUNCTION__);
+	}
+	buf[i] = 0;
+    }
     return buf;
 }
 
@@ -161,14 +187,31 @@ static void
 csv_read_key_value(FILE *file, char delimiter, char **key, char **value)
 {
     char *s;
+
+    if (key) {
+	key = NULL;
+    }
+
+    if (value) {
+	value = NULL;
+    }
+
     if (!feof(file)) {
-	while ((s = csv_next(file, delimiter)) == NULL) ;
-	if (key && s) {
-	    *key = strdup(s);
+	while ((s = csv_next(file, delimiter)) == NULL) {
+	    if (feof(file)) {
+		return;
+	    }
+	}
+	if (key) {
+	    *key = s;
+	} else {
+	    xfree(s);
 	}
 	s = csv_next(file, delimiter);
-	if (value && s) {
-	    *value = strdup(s);
+	if (value) {
+	    *value = s;
+	} else {
+	    xfree(s);
 	}
     }
 }
@@ -688,6 +731,7 @@ read_table(int fd)
 	    row = lmap_row_new();
 	    if (! row) {
 		lmap_table_free(tab);
+		xfree(s);
 		(void) fclose(file);
 		return NULL;
 	    }
@@ -697,11 +741,13 @@ read_table(int fd)
 	val = lmap_value_new();
 	if (! val) {
 	    lmap_table_free(tab);
+	    xfree(s);
 	    (void) fclose(file);
 	    return NULL;
 	}
 	lmap_value_set_value(val, s);
 	lmap_row_add_value(row, val);
+	xfree(s);
     }
 
     (void) fclose(file);
