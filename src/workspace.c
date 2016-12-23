@@ -34,187 +34,10 @@
 #include "lmap.h"
 #include "lmapd.h"
 #include "utils.h"
+#include "csv.h"
 #include "workspace.h"
 
-static void *
-xrealloc(void *ptr, size_t size, const char *func)
-{
-    char *p = realloc(ptr, size);
-    if (!p) {
-        lmap_log(LOG_ERR, func, "failed to allocate memory");
-    }
-    return p;
-}
-
-static void
-xfree(void *ptr)
-{
-    if (ptr) {
-        free(ptr);
-    }
-}
-
-/**
- * @brief Append a field to a CSV file
- *
- * Appends a string value as a field to a CSV file. The string is
- * quoted if the string value contains the delimiter or white space or
- * the quote character. See RFC 4180 for more details.
- *
- * @param file pointer to the open FILE stream
- * @param delimiter delimiter character
- * @param s string value
- */
-
-static void
-csv_append(FILE *file, char delimiter, const char *s)
-{
-    int i, need_quote = 0;
-    const char quote = '"';
-    
-    if (delimiter) {
-	fputc(delimiter, file);
-    }
-
-    for (i = 0; s && s[i]; i++) {
-	if ((delimiter && s[i] == delimiter)
-	    || s[i] == quote || isspace(s[i])) {
-	    need_quote = 1;
-	    break;
-	}
-    }
-    
-    if (need_quote) {
-	fputc(quote, file);
-	for (i = 0; s && s[i]; i++) {
-	    fputc(s[i], file);
-	    if (s[i] == quote) {
-		fputc(s[i], file);
-	    }
-	}
-	fputc(quote, file);
-    } else {
-	fputs(s, file);
-    }
-}
-
-/**
- * @brief End a record in a CSV file
- *
- * Ends a record (aka line) in a CSV file.
- *
- * @param file pointer to the open FILE stream
- */
-
-static void
-csv_end(FILE *file)
-{
-    fprintf(file, "\n");
-}
-
-static void
-csv_append_key_value(FILE *file, char delimiter,
-		     const char *key, const char *value)
-{
-    if (key && value) {
-	csv_append(file, 0, key);
-	csv_append(file, delimiter, value);
-	csv_end(file);
-    }
-}
-
-static char*
-csv_next(FILE *file, char delimiter)
-{
-    int c, i, quoted = 0;
-    size_t size = 0;
-    char *buf = NULL;
-    const char quote = '"';
-
-    i = 0;
-    while ((c = fgetc(file)) != EOF) {
-	if (!quoted && c == delimiter) {
-	    break;
-	}
-	if (c == '\n') {
-	    if (i == 0) {
-		return NULL;
-	    } else {
-		ungetc(c, file);
-		break;
-	    }
-	}
-	if (i == 0 && !quoted && isspace(c)) {
-	    continue;
-	}
-	if (i == 0 && c == quote) {
-	    quoted = 1;
-	    continue;
-	}
-	if (i >= size) {
-	    size += 64;
-	    buf = xrealloc(buf, size, __FUNCTION__);
-	}
-	if (c == quote) {
-	    if (quoted) {
-		if ((c = fgetc(file)) == EOF) {
-		    break;
-		}
-		if (c == delimiter) {
-		    break;
-		}
-		buf[i] = c;
-	    } else {
-		buf[i] = c;
-	    }
-	} else {
-	    buf[i] = c;
-	}
-	i++;
-    }
-
-    if (buf) {
-	if (i >= size) {
-	    size += 2;
-	    buf = xrealloc(buf, size, __FUNCTION__);
-	}
-	buf[i] = 0;
-    }
-    return buf;
-}
-
-static void
-csv_read_key_value(FILE *file, char delimiter, char **key, char **value)
-{
-    char *s;
-
-    if (key) {
-	key = NULL;
-    }
-
-    if (value) {
-	value = NULL;
-    }
-
-    if (!feof(file)) {
-	while ((s = csv_next(file, delimiter)) == NULL) {
-	    if (feof(file)) {
-		return;
-	    }
-	}
-	if (key) {
-	    *key = s;
-	} else {
-	    xfree(s);
-	}
-	s = csv_next(file, delimiter);
-	if (value) {
-	    *value = s;
-	} else {
-	    xfree(s);
-	}
-    }
-}
+static const char delimiter = ';';
 
 /**
  * @brief Create a safe filesystem name
@@ -567,7 +390,6 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
     char buf[128];
     struct option *option;
     struct tag *tag;
-    const char delimiter = ';';
     
     assert(action && action->name && action->workspace);
 
@@ -630,7 +452,6 @@ lmapd_workspace_action_meta_add_end(struct schedule *schedule, struct action *ac
     int fd;
     FILE *f;
     char buf[128];
-    const char delimiter = ';';
 
     assert(action && action->name && action->workspace);
     
@@ -719,7 +540,7 @@ read_table(int fd)
     }
 
     while (!feof(file)) {
-	char *s = csv_next(file, ';');
+	char *s = csv_next(file, delimiter);
 	if (! s) {
 	    if (feof(file)) {
 		break;
@@ -731,7 +552,7 @@ read_table(int fd)
 	    row = lmap_row_new();
 	    if (! row) {
 		lmap_table_free(tab);
-		xfree(s);
+		if (s) free(s);
 		(void) fclose(file);
 		return NULL;
 	    }
@@ -741,13 +562,13 @@ read_table(int fd)
 	val = lmap_value_new();
 	if (! val) {
 	    lmap_table_free(tab);
-	    xfree(s);
+	    if (s) free(s);
 	    (void) fclose(file);
 	    return NULL;
 	}
 	lmap_value_set_value(val, s);
 	lmap_row_add_value(row, val);
-	xfree(s);
+	if (s) free(s);
     }
 
     (void) fclose(file);
@@ -777,7 +598,7 @@ read_result(int fd)
     while (!feof(file)) {
 	key = NULL;
 	value = NULL;
-	csv_read_key_value(file, ';', &key, &value);
+	csv_next_key_value(file, delimiter, &key, &value);
 	if (key && value) {
 	    if (! strcmp(key, "schedule")) {
 		lmap_result_set_schedule(res, value);
