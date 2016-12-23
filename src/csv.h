@@ -20,7 +20,9 @@
 
 #include <stdio.h>
 
+extern void csv_start(FILE *file, char delimiter, const char *field);
 extern void csv_append(FILE *file, char delimiter, const char *field);
+extern void csv_end(FILE *file);
 extern char* csv_next(FILE *file, char delimiter);
 
 extern void csv_append_key_value(FILE *file, char delimiter,

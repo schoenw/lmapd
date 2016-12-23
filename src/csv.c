@@ -41,32 +41,12 @@ xfree(void *ptr)
     }
 }
 
-/**
- * @brief Append a field to a CSV file
- *
- * Appends a string value as a field to a CSV file. The string is
- * quoted if the string value contains the delimiter or white space or
- * the quote character. See RFC 4180 for more details.
- *
- * If the delimiter is 0, then no delimiter will be printed (use this
- * only at the beginning of a record). If the string s is NULL, then
- * the current record (aka line) will be terminated.
- *
- * @param file pointer to the open FILE stream
- * @param delimiter delimiter character or 0 (no delimiter)
- * @param field value of the field to append or NULL (end of record)
- */
-
-void
-csv_append(FILE *file, const char delimiter, const char *field)
+static void
+append(FILE *file, const char delimiter, const char *field)
 {
     int i, need_quote = 0;
     const char quote = '"';
     
-    if (delimiter) {
-	fputc(delimiter, file);
-    }
-
     if (! field) {
 	fprintf(file, "\n");
 	return;
@@ -94,14 +74,49 @@ csv_append(FILE *file, const char delimiter, const char *field)
     }
 }
 
+/**
+ * @brief Append a field to a CSV file
+ *
+ * Appends a string value as a field to a CSV file. The string is
+ * quoted if the string value contains the delimiter or white space or
+ * the quote character. See RFC 4180 for more details.
+ *
+ * If the delimiter is 0, then no delimiter will be printed (use this
+ * only at the beginning of a record). If the string s is NULL, then
+ * the current record (aka line) will be terminated.
+ *
+ * @param file pointer to the open FILE stream
+ * @param delimiter delimiter character or 0 (no delimiter)
+ * @param field value of the field to append or NULL (end of record)
+ */
+
+void
+csv_append(FILE *file, const char delimiter, const char *field)
+{
+    fputc(delimiter, file);
+    append(file, delimiter, field);
+}
+
+void
+csv_start(FILE *file, const char delimiter, const char *field)
+{
+    append(file, delimiter, field);
+}
+
+void
+csv_end(FILE *file)
+{
+    append(file, 0, NULL);
+}
+
 void
 csv_append_key_value(FILE *file, const char delimiter,
 		     const char *key, const char *value)
 {
     if (key && value) {
-	csv_append(file, 0, key);
+	csv_start(file, delimiter, key);
 	csv_append(file, delimiter, value);
-	csv_append(file, delimiter, NULL);
+	csv_end(file);
     }
 }
 
@@ -143,6 +158,9 @@ csv_next(FILE *file, const char delimiter)
 		    break;
 		}
 		if (c == delimiter) {
+		    break;
+		}
+		if (c == '\n') {
 		    break;
 		}
 		buf[i] = c;

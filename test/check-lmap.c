@@ -23,6 +23,7 @@
 #include "lmap.h"
 #include "utils.h"
 #include "parser.h"
+#include "csv.h"
 
 static char last_error_msg[1024];
 
@@ -1739,10 +1740,78 @@ START_TEST(test_parser_state_actions)
 }
 END_TEST
 
+START_TEST(test_csv)
+{
+    FILE *f;
+    const char delimiter = 'x';
+    const char *msg =
+	"This message is something rather long including funny characters; "
+	"such as ' or . or ? and then even more;\"";
+    char buf[256];
+
+    f = tmpfile();
+    ck_assert_ptr_ne(f, NULL);
+    csv_start(f, delimiter, "0");
+    csv_append(f, delimiter, "1");
+    csv_append(f, delimiter, "2");
+    csv_end(f);
+    csv_start(f, delimiter, "3");
+    csv_append(f, delimiter, "4");
+    csv_append(f, delimiter, "5");
+    csv_append(f, delimiter, "6");
+    csv_end(f);
+    csv_start(f, delimiter, msg);
+    csv_end(f);
+    rewind(f);
+    fgets(buf, sizeof(buf), f);
+    ck_assert_str_eq(buf, "0x1x2\n");
+    fgets(buf, sizeof(buf), f);
+    ck_assert_str_eq(buf, "3x4x5x6\n");
+    fgets(buf, sizeof(buf), f);
+    if (strlen(buf) > 3) {
+	buf[strlen(buf)-3] = 0;
+    }
+    ck_assert_str_eq(buf+1, msg);
+    fclose(f);
+}
+END_TEST
+
+START_TEST(test_csv_key_value)
+{
+    FILE *f;
+    const char delimiter = ';';
+    const char *hello = "hel;lo";
+    const char *world = "wo\"rld";
+    char *key, *value;
+
+    f = tmpfile();
+    ck_assert_ptr_ne(f, NULL);
+    csv_append_key_value(f, delimiter, hello, world);
+    csv_append_key_value(f, delimiter, world, hello);
+    rewind(f);
+    csv_next_key_value(f, delimiter, &key, &value);
+    ck_assert_str_eq(key, hello);
+    ck_assert_str_eq(value, world);
+    csv_next_key_value(f, delimiter, &key, &value);
+    ck_assert_str_eq(key, world);
+    ck_assert_str_eq(value, hello);
+    csv_next_key_value(f, delimiter, &key, &value);
+    ck_assert_ptr_eq(key, NULL);
+    ck_assert_ptr_eq(value, NULL);
+    rewind(f);
+    csv_next_key_value(f, delimiter, NULL, &value);
+    ck_assert_str_eq(value, world);
+    rewind(f);
+    csv_next_key_value(f, delimiter, &key, NULL);
+    ck_assert_str_eq(key, hello);
+    fclose(f);
+}
+END_TEST
+
 Suite * lmap_suite(void)
 {
     Suite *s;
-    TCase *tc_core, *tc_parser;
+    TCase *tc_core, *tc_parser, *tc_csv;
 
     s = suite_create("lmap");
 
@@ -1786,6 +1855,11 @@ Suite * lmap_suite(void)
     tcase_add_test(tc_parser, test_parser_state_schedules);
     tcase_add_test(tc_parser, test_parser_state_actions);
     suite_add_tcase(s, tc_parser);
+
+    tc_csv = tcase_create("Csv");
+    tcase_add_test(tc_csv, test_csv);
+    tcase_add_test(tc_csv, test_csv_key_value);
+    suite_add_tcase(s, tc_csv);
 
     return s;
 }
