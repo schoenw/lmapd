@@ -1748,6 +1748,7 @@ START_TEST(test_csv)
 	"This message is something rather long including funny characters; "
 	"such as ' or . or ? and then even more;\"";
     char buf[256];
+    char *s;
 
     f = tmpfile();
     ck_assert_ptr_ne(f, NULL);
@@ -1763,11 +1764,14 @@ START_TEST(test_csv)
     csv_start(f, delimiter, msg);
     csv_end(f);
     rewind(f);
-    fgets(buf, sizeof(buf), f);
+    s = fgets(buf, sizeof(buf), f);
+    ck_assert_ptr_ne(s, NULL);
     ck_assert_str_eq(buf, "0x1x2\n");
-    fgets(buf, sizeof(buf), f);
+    s = fgets(buf, sizeof(buf), f);
+    ck_assert_ptr_ne(s, NULL);
     ck_assert_str_eq(buf, "3x4x5x6\n");
-    fgets(buf, sizeof(buf), f);
+    s = fgets(buf, sizeof(buf), f);
+    ck_assert_ptr_ne(s, NULL);
     if (strlen(buf) > 3) {
 	buf[strlen(buf)-3] = 0;
     }
