@@ -2373,6 +2373,7 @@ lmap_result_free(struct result *res)
 	xfree(res->task);
 	free_all_options(res->options);
 	free_all_tags(res->tags);
+	xfree(res->cycle_number);
 	while (res->tables) {
 	    struct table *tab = res->tables;
 	    res->tables = tab->next;
