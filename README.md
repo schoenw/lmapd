@@ -5,7 +5,7 @@
 lmapd is the proof-of-concept daemon implementation for the Large-Scale Measurement Platforms (LMAP) information and data model developed by the [LMAP] working group of the [IETF].
 
 ### Version
-0.3
+0.4.1
 
 ### Dependencies
 
@@ -47,6 +47,7 @@ $ ./src/lmapctl help
   config      validate and render lmap configuration
   help        show brief list of commands
   reload      reload the lmap configuration
+  report      report data
   running     test if the lmap daemon is running
   shutdown    shutdown the lmap daemon
   status      show status information

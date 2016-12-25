@@ -156,8 +156,8 @@ read_config(struct lmapd *lmapd)
     }
     if (lmapd->lmap->capabilities) {
 	char buf[256];
-	snprintf(buf, sizeof(buf), "%s version %d.%d", LMAPD_LMAPD,
-		 LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
+	snprintf(buf, sizeof(buf), "%s version %d.%d.%d", LMAPD_LMAPD,
+		 LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR, LMAP_VERSION_PATCH);
 	lmap_capability_set_version(lmapd->lmap->capabilities, buf);
 	lmap_capability_add_system_tags(lmapd->lmap->capabilities);
     }
@@ -198,8 +198,8 @@ main(int argc, char *argv[])
 	    run_path = optarg;
 	    break;
 	case 'v':
-	    printf("%s version %d.%d\n", LMAPD_LMAPD,
-		   LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
+	    printf("%s version %d.%d.%d\n", LMAPD_LMAPD,
+		   LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR, LMAP_VERSION_PATCH);
 	    exit(EXIT_SUCCESS);
 	case 'h':
 	    usage(stdout);

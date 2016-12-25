@@ -24,6 +24,7 @@
 
 #define LMAP_VERSION_MAJOR	@lmapd_VERSION_MAJOR@
 #define LMAP_VERSION_MINOR	@lmapd_VERSION_MINOR@
+#define LMAP_VERSION_PATCH	@lmapd_VERSION_PATCH@
 
 /**
  * A struct lmap is used to hold all config and state information

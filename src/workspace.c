@@ -406,8 +406,8 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
 	return -1;
     }
     
-    snprintf(buf, sizeof(buf), "%s-%d.%d",
-	     "lmapd", LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
+    snprintf(buf, sizeof(buf), "%s version %d.%d.%d", LMAPD_LMAPD,
+	     LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR, LMAP_VERSION_PATCH);
     csv_append_key_value(f, delimiter, "magic", buf);
     csv_append_key_value(f, delimiter, "schedule", schedule->name);
     csv_append_key_value(f, delimiter, "action", action->name);

@@ -644,8 +644,8 @@ version_cmd(int argc, char *argv[])
 	return 1;
     }
 
-    printf("%s version %d.%d\n", LMAPD_LMAPCTL,
-	   LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR);
+    printf("%s version %d.%d.%d\n", LMAPD_LMAPCTL,
+	   LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR, LMAP_VERSION_PATCH);
     return 0;
 }
 
