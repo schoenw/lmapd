@@ -19,7 +19,7 @@
 
 #include "lmap.h"
 #include "utils.h"
-#include "parser.h"
+#include "xml-io.h"
 #include "runner.h"
 
 static lmap_log_handler *log_handler = lmap_vlog_default;

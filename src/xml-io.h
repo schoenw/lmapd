@@ -15,16 +15,16 @@
  * along with lmapd. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LMAP_XML_PARSER_H
-#define LMAP_XML_PARSER_H
+#ifndef LMAP_XML_IO_H
+#define LMAP_XML_IO_H
 
 #include "lmap.h"
 
-#define LMAPC_NAMESPACE "urn:ietf:params:xml:ns:yang:ietf-lmap-control"
-#define LMAPC_PREFIX	"lmapc"
+#define LMAPC_XML_NAMESPACE	"urn:ietf:params:xml:ns:yang:ietf-lmap-control"
+#define LMAPC_XML_PREFIX	"lmapc"
 
-#define LMAPR_NAMESPACE "urn:ietf:params:xml:ns:yang:ietf-lmap-report"
-#define LMAPR_PREFIX	"lmapr"
+#define LMAPR_XML_NAMESPACE	"urn:ietf:params:xml:ns:yang:ietf-lmap-report"
+#define LMAPR_XML_PREFIX	"lmapr"
 
 extern int lmap_xml_parse_config_path(struct lmap *lmap, const char *path);
 extern int lmap_xml_parse_config_file(struct lmap *lmap, const char *file);
@@ -39,6 +39,5 @@ extern int lmap_xml_parse_report_string(struct lmap *lmap, const char *string);
 extern char * lmap_xml_render_config(struct lmap *lmap);
 extern char * lmap_xml_render_state(struct lmap *lmap);
 extern char * lmap_xml_render_report(struct lmap *lmap);
-extern char * lmap_xml_render_result(struct result *res);
 
 #endif

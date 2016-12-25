@@ -25,7 +25,7 @@
 #include "lmap.h"
 #include "lmapd.h"
 #include "utils.h"
-#include "parser.h"
+#include "xml-io.h"
 #include "runner.h"
 #include "signals.h"
 #include "workspace.h"

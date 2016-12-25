@@ -35,7 +35,7 @@
 
 #include "lmap.h"
 #include "utils.h"
-#include "parser.h"
+#include "xml-io.h"
 
 #define RENDER_CONFIG_TRUE	0x01
 #define RENDER_CONFIG_FALSE	0x02
@@ -1072,10 +1072,10 @@ parse_control(struct lmap *lmap, xmlDocPtr doc, int what)
 	goto exit;
     }
 
-    ret = xmlXPathRegisterNs(ctx, BAD_CAST LMAPC_PREFIX,
-			     BAD_CAST LMAPC_NAMESPACE);
+    ret = xmlXPathRegisterNs(ctx, BAD_CAST LMAPC_XML_PREFIX,
+			     BAD_CAST LMAPC_XML_NAMESPACE);
     if (ret != 0) {
-	lmap_err("cannot register xpath namespace '%s'", LMAPC_NAMESPACE);
+	lmap_err("cannot register xpath namespace '%s'", LMAPC_XML_NAMESPACE);
 	ret = -1;
 	goto exit;
     }
@@ -1236,6 +1236,351 @@ lmap_xml_parse_state_string(struct lmap *lmap, const char *string)
     }
 
     ret = parse_state_doc(lmap, doc);
+
+exit:
+    if (doc) {
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+    }
+    return ret;
+}
+
+static int
+parse_report(struct lmap *lmap, xmlXPathContextPtr ctx)
+{
+    int i, j;
+    xmlXPathObjectPtr result;
+
+    const char *xpath = "//lmapr:report/lmapr:*";
+
+    struct {
+	char *name;
+	int (*func)(struct agent *a, const char *c);
+    } tab[] = {
+	{ .name = "date",
+	  .func = lmap_agent_set_report_date },
+	{ .name = "agent-id",
+	  .func = lmap_agent_set_agent_id },
+	{ .name = "group-id",
+	  .func = lmap_agent_set_group_id },
+	{ .name = "measurement-point",
+	  .func = lmap_agent_set_measurement_point },
+	{ .name = NULL, .func = NULL }
+    };
+
+    assert(lmap);
+
+    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
+    if (! result) {
+	lmap_err("error in xpath expression '%s'", xpath);
+	return -1;
+    }
+    
+    if (!result->nodesetval || !result->nodesetval->nodeNr) {
+	xmlXPathFreeObject(result);
+	return 0;
+    }
+
+    if (! lmap->agent) {
+	lmap->agent = lmap_agent_new();
+	if (! lmap->agent) {
+	    xmlXPathFreeObject(result);
+	    return -1;
+	}
+    }
+    
+    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
+	xmlNodePtr node = result->nodesetval->nodeTab[i];
+
+	for (j = 0; tab[j].name; j++) {
+	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		xmlChar *content = xmlNodeGetContent(node);
+		if (!xmlStrcmp(node->name, BAD_CAST "agent-id")) {
+		    lmap_agent_set_report_agent_id(lmap->agent, "true");
+		}
+		if (!xmlStrcmp(node->name, BAD_CAST "group-id")) {
+		    lmap_agent_set_report_group_id(lmap->agent, "true");
+		}
+		if (!xmlStrcmp(node->name, BAD_CAST "measurement-point")) {
+		    lmap_agent_set_report_measurement_point(lmap->agent, "true");
+		}
+		if (tab[j].func) {
+		    tab[j].func(lmap->agent, (char *) content);
+		}
+		if (content) {
+		    xmlFree(content);
+		}
+		break;
+	    }
+	}
+	if (! tab[j].name) {
+	    lmap_wrn("unexpected element '%s'", node->name);
+	}
+    }
+    xmlXPathFreeObject(result);
+    
+    return 0;
+}
+
+static struct value *
+parse_value(xmlNodePtr value_node)
+{
+    struct value *value;
+    xmlChar *content;
+
+    value = lmap_value_new();
+    if (! value) {
+	return NULL;
+    }
+    
+    content = xmlNodeGetContent(value_node);
+    lmap_value_set_value(value, (char *) content);
+    xmlFree(content);
+    
+    return value;
+}
+
+static struct row *
+parse_row(xmlNodePtr row_node)
+{
+    xmlNodePtr node;
+    struct row *row;
+
+    row = lmap_row_new();
+    if (! row) {
+	return NULL;
+    }
+    
+    for (node = xmlFirstElementChild(row_node);
+	 node; node = xmlNextElementSibling(node)) {
+
+	if (node->ns != row_node->ns) continue;
+	
+	if (!xmlStrcmp(node->name, BAD_CAST "value")) {
+	    struct value *value = parse_value(node);
+	    lmap_row_add_value(row, value);
+	}
+    }
+    return row;
+}
+
+static struct table *
+parse_table(xmlNodePtr table_node)
+{
+    xmlNodePtr node;
+    struct table *tab;
+
+    tab = lmap_table_new();
+    if (! tab) {
+	return NULL;
+    }
+    
+    for (node = xmlFirstElementChild(table_node);
+	 node; node = xmlNextElementSibling(node)) {
+
+	if (node->ns != table_node->ns) continue;
+	
+	if (!xmlStrcmp(node->name, BAD_CAST "row")) {
+	    struct row *row = parse_row(node);
+	    lmap_table_add_row(tab, row);
+	}
+    }
+    return tab;    
+}
+
+static struct result *
+parse_result(xmlNodePtr result_node)
+{
+    int j;
+    xmlNodePtr node;
+    struct result *res;
+
+    struct {
+	char *name;
+	int (*func)(struct result *r, const char *c);
+    } tab[] = {
+	{ .name = "schedule",
+	  .func = lmap_result_set_schedule },
+	{ .name = "action",
+	  .func = lmap_result_set_action },
+	{ .name = "task",
+	  .func = lmap_result_set_task },
+	{ .name = "tag",
+	  .func = lmap_result_add_tag },
+	{ .name = "event",
+	  .func = lmap_result_set_event },
+	{ .name = "start",
+	  .func = lmap_result_set_start },
+	{ .name = "end",
+	  .func = lmap_result_set_end },
+	{ .name = "cycle-number",
+	  .func = lmap_result_set_cycle_number },
+	{ .name = "status",
+	  .func = lmap_result_set_status },
+	{ .name = NULL, .func = NULL }
+    };
+
+    res = lmap_result_new();
+    if (! res) {
+	return NULL;
+    }
+    
+    for (node = xmlFirstElementChild(result_node);
+	 node; node = xmlNextElementSibling(node)) {
+	
+	if (node->ns != result_node->ns) continue;
+
+	if (!xmlStrcmp(node->name, BAD_CAST "option")) {
+	    struct option *option = parse_option(node,
+		      		 PARSE_CONFIG_TRUE | PARSE_CONFIG_FALSE);
+	    lmap_result_add_option(res, option);
+	    continue;
+	}
+
+	if (!xmlStrcmp(node->name, BAD_CAST "table")) {
+	    struct table *tab = parse_table(node);
+	    lmap_result_add_table(res, tab);
+	    continue;
+	}
+
+	for (j = 0; tab[j].name; j++) {
+	    if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		xmlChar *content = xmlNodeGetContent(node);
+		tab[j].func(res, (char *) content);
+		if (content) {
+		    xmlFree(content);
+		}
+		break;
+	    }
+	}
+	if (! tab[j].name) {
+	    lmap_wrn("unexpected element '%s'", node->name);
+	}
+    }
+
+    return res;
+}
+
+/**
+ * @brief Parses the schedule information
+ * @details Function to parse the schedule information from the XML config
+ * file
+ * @return 0 on success, -1 on error
+ */
+static int
+parse_results(struct lmap *lmap, xmlXPathContextPtr ctx)
+{
+    int i;
+    xmlXPathObjectPtr result;
+    struct result *res;
+    
+    const char *xpath = "//lmapr:report/lmapr:result";
+
+    assert(lmap);
+
+    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
+    if (! result) {
+	lmap_err("error in xpath expression '%s'", xpath);
+	return -1;
+    }
+
+    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
+	res = parse_result(result->nodesetval->nodeTab[i]);
+	if (res) {
+	    lmap_add_result(lmap, res);
+	}
+    }
+
+    xmlXPathFreeObject(result);
+    return 0;
+}
+
+static int
+parse_report_doc(struct lmap *lmap, xmlDocPtr doc)
+{
+    int i, ret;
+    xmlXPathContextPtr ctx = NULL;
+
+    struct {
+	int (*parse)(struct lmap *lmap, xmlXPathContextPtr ctx);
+    } tab[] = {
+	{ parse_report },
+	{ parse_results },
+	{ NULL }
+    };
+
+    assert(lmap && doc);
+
+    ctx = xmlXPathNewContext(doc);
+    if (! ctx) {
+	lmap_err("cannot create xpath context");
+	ret = -1;
+	goto exit;
+    }
+
+    ret = xmlXPathRegisterNs(ctx, BAD_CAST LMAPR_XML_PREFIX,
+			     BAD_CAST LMAPR_XML_NAMESPACE);
+    if (ret != 0) {
+	lmap_err("cannot register xpath namespace '%s'", LMAPC_XML_NAMESPACE);
+	ret = -1;
+	goto exit;
+    }
+    
+    for (i = 0; tab[i].parse; i++) {
+	ret = tab[i].parse(lmap, ctx);
+	if (ret != 0) {
+	    goto exit;
+	}
+    }
+
+exit:
+    if (ctx) {
+	xmlXPathFreeContext(ctx);
+    }
+    return ret;
+}
+
+int
+lmap_xml_parse_report_file(struct lmap *lmap, const char *file)
+{
+    int ret;
+    xmlDocPtr doc = NULL;
+    
+    assert(file);
+    
+    doc = xmlParseFile(file);
+    if (! doc) {
+	lmap_err("cannot parse state file '%s'", file);
+	ret = -1;
+	goto exit;
+    }
+
+    ret = parse_report_doc(lmap, doc);
+
+exit:
+    if (doc) {
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+    }
+    return ret;
+}
+
+int
+lmap_xml_parse_report_string(struct lmap *lmap, const char *string)
+{
+    int ret;
+    xmlDocPtr doc = NULL;
+    
+    assert(string);
+
+    doc = xmlParseMemory(string, strlen(string));
+    if (! doc) {
+	lmap_err("cannot parse from string");
+	ret = -1;
+	goto exit;
+    }
+
+    ret = parse_report_doc(lmap, doc);
 
 exit:
     if (doc) {
@@ -1534,14 +1879,11 @@ render_capabilities(struct capability *capability, xmlNodePtr root, xmlNsPtr ns,
 static void
 render_agent_report(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
 {
-    time_t t;
-
     if (! agent) {
 	return;
     }
 
-    t = time(NULL);
-    render_leaf_datetime(root, ns, "date", &t);
+    render_leaf_datetime(root, ns, "date", &agent->report_date);
     if (agent->agent_id && agent->report_agent_id) {
 	render_leaf(root, ns, "agent-id", agent->agent_id);
     }
@@ -2032,7 +2374,7 @@ render_control(struct lmap *lmap, int what)
     }
     xmlDocSetRootElement(doc, root);
     
-    ns = xmlNewNs(root, BAD_CAST LMAPC_NAMESPACE, BAD_CAST LMAPC_PREFIX);
+    ns = xmlNewNs(root, BAD_CAST LMAPC_XML_NAMESPACE, BAD_CAST LMAPC_XML_PREFIX);
     if (ns == NULL) {
 	goto exit;
     }
@@ -2112,7 +2454,7 @@ lmap_xml_render_report(struct lmap *lmap)
     xmlDocPtr doc;
     xmlNodePtr root, node;
     xmlNsPtr ns = NULL;
-    char *config = NULL;
+    char *report = NULL;
     xmlChar *p = NULL;
     int len = 0;
     struct result *res;
@@ -2130,16 +2472,12 @@ lmap_xml_render_report(struct lmap *lmap)
     }
     xmlDocSetRootElement(doc, root);
     
-    ns = xmlNewNs(root, BAD_CAST LMAPR_NAMESPACE, BAD_CAST LMAPR_PREFIX);
+    ns = xmlNewNs(root, BAD_CAST LMAPR_XML_NAMESPACE, BAD_CAST LMAPR_XML_PREFIX);
     if (ns == NULL) {
 	goto exit;
     }
 
     node = xmlNewChild(root, ns, BAD_CAST "report", NULL);
-    if (! node) {
-	goto exit;
-    }
-    node = xmlNewChild(node, ns, BAD_CAST "input", NULL);
     if (! node) {
 	goto exit;
     }
@@ -2149,54 +2487,12 @@ lmap_xml_render_report(struct lmap *lmap)
     }
     xmlDocDumpFormatMemoryEnc(doc, &p, &len, "UTF-8", 1);
     if (p) {
-	config = strdup((char *) p);
+	report = strdup((char *) p);
 	xmlFree(p);
     }
 
 exit:
     if (doc) xmlFreeDoc(doc);
     xmlCleanupParser();
-    return config;
+    return report;
 }
-
-char *
-lmap_xml_render_result(struct result *res)
-{
-    xmlDocPtr doc;
-    xmlNodePtr root;
-    xmlNsPtr ns = NULL;
-    char *config = NULL;
-    xmlChar *p = NULL;
-    int len = 0;
-
-    assert(res);
-
-    doc = xmlNewDoc(BAD_CAST "1.0");
-    if (doc == NULL) {
-	goto exit;
-    }
-
-    root = xmlNewNode(NULL, BAD_CAST "meta");
-    if (! root) {
-	goto exit;
-    }
-    xmlDocSetRootElement(doc, root);
-    
-    ns = xmlNewNs(root, BAD_CAST LMAPR_NAMESPACE, BAD_CAST LMAPR_PREFIX);
-    if (ns == NULL) {
-	goto exit;
-    }
-
-    render_result(res, root, ns);
-    xmlDocDumpFormatMemoryEnc(doc, &p, &len, "UTF-8", 1);
-    if (p) {
-	config = strdup((char *) p);
-	xmlFree(p);
-    }
-
-exit:
-    if (doc) xmlFreeDoc(doc);
-    xmlCleanupParser();
-    return config;
-}
-

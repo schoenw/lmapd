@@ -626,13 +626,13 @@ read_result(int fd)
 		lmap_result_add_tag(res, value);
 	    }
 	    if (! strcmp(key, "event")) {
-		lmap_result_set_event(res, value);
+		lmap_result_set_event_epoch(res, value);
 	    }
 	    if (! strcmp(key, "start")) {
-		lmap_result_set_start(res, value);
+		lmap_result_set_start_epoch(res, value);
 	    }
 	    if (! strcmp(key, "end")) {
-		lmap_result_set_end(res, value);
+		lmap_result_set_end_epoch(res, value);
 	    }
 	    if (! strcmp(key, "cycle-number")) {
 		lmap_result_set_cycle_number(res, value);

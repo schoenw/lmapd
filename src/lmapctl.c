@@ -36,7 +36,8 @@
 #include "lmapd.h"
 #include "utils.h"
 #include "pidfile.h"
-#include "parser.h"
+#include "xml-io.h"
+#include "json-io.h"
 #include "runner.h"
 #include "workspace.h"
 
@@ -72,6 +73,10 @@ static struct
 
 static struct lmapd *lmapd = NULL;
 
+#define LMAP_FORMAT_XML		0x01
+#define LMAP_FORMAT_JSON	0x02
+static int format = LMAP_FORMAT_XML;
+
 static void
 atexit_cb()
 {
@@ -98,7 +103,9 @@ usage(FILE *f)
 	    "\t-c path to config directory or file\n"
 	    "\t-r path to run directory (pid file and status file)\n"
 	    "\t-C path in which the program is executed\n"
-	    "\t-h show brief usage information and exit\n",
+	    "\t-h show brief usage information and exit\n"
+	    "\t-j use json format when generating output\n"
+	    "\t-x use xml format when generating output (default)\n",
 	    LMAPD_LMAPCTL);
 }
 
@@ -356,7 +363,7 @@ reload_cmd(int argc, char *argv[])
 static int
 report_cmd(int argc, char *argv[])
 {
-    char *xml;
+    char *report = NULL;
 
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
@@ -371,6 +378,10 @@ report_cmd(int argc, char *argv[])
 	return 1;
     }
 
+    if (lmapd->lmap->agent && ! lmapd->lmap->agent->report_date) {
+	lmapd->lmap->agent->report_date = time(NULL);
+    }
+
     /*
      * Setup the paths into the workspaces and then load the results
      * found in the current directory.
@@ -381,12 +392,19 @@ report_cmd(int argc, char *argv[])
 	return 1;
     }
 
-    xml = lmap_xml_render_report(lmapd->lmap);
-    if (! xml) {
+    switch (format) {
+    case LMAP_FORMAT_XML:
+	report = lmap_xml_render_report(lmapd->lmap);
+	break;
+    case LMAP_FORMAT_JSON:
+	report = lmap_json_render_report(lmapd->lmap);
+	break;
+    }
+    if (! report) {
 	return 1;
     }
-    fputs(xml, stdout);
-    free(xml);
+    fputs(report, stdout);
+    free(report);
     return 0;
 }
 
@@ -657,7 +675,7 @@ main(int argc, char *argv[])
     char *queue_path = NULL;
     char *run_path = NULL;
     
-    while ((opt = getopt(argc, argv, "q:c:r:C:h")) != -1) {
+    while ((opt = getopt(argc, argv, "q:c:r:C:hjx")) != -1) {
 	switch (opt) {
 	case 'q':
 	    queue_path = optarg;
@@ -677,6 +695,12 @@ main(int argc, char *argv[])
 	case 'h':
 	    usage(stdout);
 	    exit(EXIT_SUCCESS);
+	case 'j':
+	    format = LMAP_FORMAT_JSON;
+	    break;
+	case 'x':
+	    format = LMAP_FORMAT_XML;
+	    break;
 	default:
 	    usage(stderr);
 	    exit(EXIT_FAILURE);

@@ -19,7 +19,7 @@ link_directories(${LIBEVENT_LIBRARY_DIRS}
 	${LIBXML2_LIBRARY_DIRS}
 	${LIBJSONC_LIBRARY_DIRS})
 
-add_library(lmap data.c pidfile.c utils.c parser.c workspace.c runner.c signals.c csv.c)
+add_library(lmap data.c pidfile.c utils.c workspace.c runner.c signals.c csv.c xml-io.c json-io.c)
 
 add_executable(lmapd lmapd.c)
 target_link_libraries(lmapd

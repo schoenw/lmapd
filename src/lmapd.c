@@ -29,7 +29,7 @@
 #include "lmapd.h"
 #include "utils.h"
 #include "pidfile.h"
-#include "parser.h"
+#include "xml-io.h"
 #include "runner.h"
 #include "workspace.h"
 

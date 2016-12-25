@@ -22,7 +22,7 @@
 
 #include "lmap.h"
 #include "utils.h"
-#include "parser.h"
+#include "xml-io.h"
 #include "csv.h"
 
 static char last_error_msg[1024];
@@ -543,6 +543,24 @@ START_TEST(test_lmap_table)
     lmap_table_add_row(tab, row);
     ck_assert_int_eq(lmap_table_valid(NULL, tab), 1);
     lmap_table_free(tab);
+}
+END_TEST
+
+START_TEST(test_lmap_result)
+{
+    struct result *res;
+    
+    res = lmap_result_new();
+    ck_assert_ptr_ne(res, NULL);
+    lmap_result_set_schedule(res, "schedule");
+    lmap_result_set_action(res, "action");
+    ck_assert_int_eq(lmap_result_valid(NULL, res), 1);
+    lmap_result_set_task(res, "task");
+    ck_assert_int_eq(lmap_result_add_tag(res, "foo"), 0);
+    ck_assert_int_eq(lmap_result_add_tag(res, "bar"), 0);
+    ck_assert_int_eq(lmap_result_add_tag(res, "foo"), -1);
+    ck_assert_str_eq(last_error_msg, "ignoring duplicate tag 'foo'");
+    lmap_result_free(res);
 }
 END_TEST
 
@@ -1740,6 +1758,194 @@ START_TEST(test_parser_state_actions)
 }
 END_TEST
 
+START_TEST(test_parser_report)
+{
+    const char *a =
+	"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+	"<rpc xmlns:lmapr=\"urn:ietf:params:xml:ns:yang:ietf-lmap-report\">\n"
+	"  <lmapr:report>\n"
+	"    <lmapr:date>2016-12-25T16:33:02+00:00</lmapr:date>\n"
+	"    <lmapr:agent-id>550e8400-e29b-41d4-a716-446655440000</lmapr:agent-id>\n"
+	"    <lmapr:result>\n"
+	"      <lmapr:schedule>demo</lmapr:schedule>\n"
+	"      <lmapr:action>mtr-search-sites</lmapr:action>\n"
+	"      <lmapr:task>mtr</lmapr:task>\n"
+	"      <lmapr:option>\n"
+	"        <lmapr:id>numeric</lmapr:id>\n"
+	"        <lmapr:name>--no-dns</lmapr:name>\n"
+	"      </lmapr:option>\n"
+	"      <lmapr:option>\n"
+	"        <lmapr:id>csv</lmapr:id>\n"
+	"        <lmapr:name>--csv</lmapr:name>\n"
+	"      </lmapr:option>\n"
+	"      <lmapr:option>\n"
+	"        <lmapr:id>lookup-AS-numbers</lmapr:id>\n"
+	"        <lmapr:name>-z</lmapr:name>\n"
+	"      </lmapr:option>\n"
+	"      <lmapr:option>\n"
+	"        <lmapr:id>one-cycle</lmapr:id>\n"
+	"        <lmapr:name>--report-cycles</lmapr:name>\n"
+	"        <lmapr:value>3</lmapr:value>\n"
+	"      </lmapr:option>\n"
+	"      <lmapr:option>\n"
+	"        <lmapr:id>www.google.com</lmapr:id>\n"
+	"        <lmapr:value>www.google.com</lmapr:value>\n"
+	"      </lmapr:option>\n"
+	"      <lmapr:tag>task-mtr-tag</lmapr:tag>\n"
+	"      <lmapr:tag>schedule-demo-tag</lmapr:tag>\n"
+	"      <lmapr:event>2016-12-20T09:16:30+00:00</lmapr:event>\n"
+	"      <lmapr:start>2016-12-20T09:16:30+00:00</lmapr:start>\n"
+	"      <lmapr:end>2016-12-20T09:16:38+00:00</lmapr:end>\n"
+	"      <lmapr:cycle-number>20161220.081700</lmapr:cycle-number>\n"
+        "      <lmapr:status>0</lmapr:status>\n"
+	"      <lmapr:table>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>1</lmapr:value>\n"
+	"          <lmapr:value>178.254.52.1</lmapr:value>\n"
+	"          <lmapr:value>AS42730</lmapr:value>\n"
+	"          <lmapr:value>1883</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>2</lmapr:value>\n"
+	"          <lmapr:value>178.254.16.29</lmapr:value>\n"
+	"          <lmapr:value>AS42730</lmapr:value>\n"
+	"          <lmapr:value>425</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>3</lmapr:value>\n"
+	"          <lmapr:value>195.16.161.9</lmapr:value>\n"
+	"          <lmapr:value>AS3356</lmapr:value>\n"
+	"          <lmapr:value>853</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>4</lmapr:value>\n"
+	"          <lmapr:value>\?\?\?</lmapr:value>\n"
+	"          <lmapr:value>AS\?\?\?</lmapr:value>\n"
+	"          <lmapr:value>0</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>5</lmapr:value>\n"
+	"          <lmapr:value>207.46.36.73</lmapr:value>\n"
+	"          <lmapr:value>AS8075</lmapr:value>\n"
+	"          <lmapr:value>1104</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>6</lmapr:value>\n"
+	"          <lmapr:value>104.44.80.147</lmapr:value>\n"
+	"          <lmapr:value>AS8075</lmapr:value>\n"
+	"          <lmapr:value>1160</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>7</lmapr:value>\n"
+	"          <lmapr:value>72.14.234.10</lmapr:value>\n"
+	"          <lmapr:value>AS15169</lmapr:value>\n"
+	"          <lmapr:value>11300</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>8</lmapr:value>\n"
+	"          <lmapr:value>209.85.244.61</lmapr:value>\n"
+	"          <lmapr:value>AS15169</lmapr:value>\n"
+	"          <lmapr:value>15424</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>9</lmapr:value>\n"
+	"          <lmapr:value>72.14.233.166</lmapr:value>\n"
+	"          <lmapr:value>AS15169</lmapr:value>\n"
+	"          <lmapr:value>36363</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>10</lmapr:value>\n"
+	"          <lmapr:value>204.79.197.200</lmapr:value>\n"
+	"          <lmapr:value>AS8068</lmapr:value>\n"
+	"          <lmapr:value>14508</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>11</lmapr:value>\n"
+	"          <lmapr:value>204.79.197.200</lmapr:value>\n"
+	"          <lmapr:value>AS8068</lmapr:value>\n"
+	"          <lmapr:value>14176</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"        <lmapr:row>\n"
+	"          <lmapr:value>MTR.0.85</lmapr:value>\n"
+	"          <lmapr:value>1482221851</lmapr:value>\n"
+	"          <lmapr:value>OK</lmapr:value>\n"
+	"          <lmapr:value>www.google.com</lmapr:value>\n"
+	"          <lmapr:value>12</lmapr:value>\n"
+	"          <lmapr:value>216.58.213.228</lmapr:value>\n"
+	"          <lmapr:value>AS15169</lmapr:value>\n"
+	"          <lmapr:value>14173</lmapr:value>\n"
+	"        </lmapr:row>\n"
+	"      </lmapr:table>\n"
+	"    </lmapr:result>\n"
+	"  </lmapr:report>\n"
+	"</rpc>\n";
+    char *b, *c;
+    struct lmap *lmapa = NULL, *lmapb = NULL;
+    
+    lmapa = lmap_new();
+    ck_assert_ptr_ne(lmapa, NULL);
+    ck_assert_int_eq(lmap_xml_parse_report_string(lmapa, a), 0);
+    b = lmap_xml_render_report(lmapa);
+    ck_assert_ptr_ne(b, NULL);
+
+    lmapb = lmap_new();
+    ck_assert_ptr_ne(lmapb, NULL);
+    ck_assert_int_eq(lmap_xml_parse_report_string(lmapb, b), 0);
+    c = lmap_xml_render_report(lmapa);
+    ck_assert_ptr_ne(c, NULL);
+
+    ck_assert_str_eq(b, c);
+    ck_assert_str_eq(c, a);
+
+    lmap_free(lmapa); lmap_free(lmapb);
+    free(b); free(c);
+}
+END_TEST
+
 START_TEST(test_csv)
 {
     FILE *f;
@@ -1839,6 +2045,7 @@ Suite * lmap_suite(void)
     tcase_add_test(tc_core, test_lmap_val);
     tcase_add_test(tc_core, test_lmap_row);
     tcase_add_test(tc_core, test_lmap_table);
+    tcase_add_test(tc_core, test_lmap_result);
     suite_add_tcase(s, tc_core);
 
     /* Parser test case */
@@ -1858,6 +2065,7 @@ Suite * lmap_suite(void)
     tcase_add_test(tc_parser, test_parser_state_capabilities);
     tcase_add_test(tc_parser, test_parser_state_schedules);
     tcase_add_test(tc_parser, test_parser_state_actions);
+    tcase_add_test(tc_parser, test_parser_report);
     suite_add_tcase(s, tc_parser);
 
     tc_csv = tcase_create("Csv");

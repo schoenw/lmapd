@@ -763,6 +763,12 @@ lmap_agent_set_last_started(struct agent *agent, const char *value)
     return set_dateandtime(&agent->last_started, value, __FUNCTION__);
 }
 
+int
+lmap_agent_set_report_date(struct agent *agent, const char *value)
+{
+    return set_dateandtime(&agent->report_date, value, __FUNCTION__);
+}
+
 /*
  * struct capability functions...
  */
@@ -2391,6 +2397,16 @@ lmap_result_valid(struct lmap *lmap, struct result *res)
 
     UNUSED(lmap);
 
+    if (! res->schedule) {
+	lmap_err("result requires a schedule");
+	valid = 0;
+    }
+
+    if (! res->action) {
+	lmap_err("result requires an action");
+	valid = 0;
+    }
+
     for (tab = res->tables; tab; tab = tab->next) {
 	valid &= lmap_table_valid(lmap, tab);
     }
@@ -2444,6 +2460,12 @@ lmap_result_add_tag(struct result *res, const char *value)
 int
 lmap_result_set_event(struct result *res, const char *value)
 {
+    return set_dateandtime(&res->event, value, __FUNCTION__);
+}
+
+int
+lmap_result_set_event_epoch(struct result *res, const char *value)
+{
     uint32_t u;
     int ret;
     
@@ -2457,6 +2479,12 @@ lmap_result_set_event(struct result *res, const char *value)
 
 int
 lmap_result_set_start(struct result *res, const char *value)
+{
+    return set_dateandtime(&res->start, value, __FUNCTION__);
+}
+
+int
+lmap_result_set_start_epoch(struct result *res, const char *value)
 {
     uint32_t u;
     int ret;
@@ -2472,9 +2500,15 @@ lmap_result_set_start(struct result *res, const char *value)
 int
 lmap_result_set_end(struct result *res, const char *value)
 {
+    return set_dateandtime(&res->end, value, __FUNCTION__);
+}
+
+int
+lmap_result_set_end_epoch(struct result *res, const char *value)
+{
     uint32_t u;
     int ret;
-    
+
     ret = set_uint32(&u, value, __FUNCTION__);
     if (ret == 0) {
 	res->end = u;
