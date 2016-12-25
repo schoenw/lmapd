@@ -30,7 +30,7 @@ module ietf-lmap-report {
      Platform (LMAP), to result data collectors. This data model is
      expected to be implemented by a collector.";
   
-  revision "2016-11-20" {
+  revision "2016-12-18" {
     description
       "Initial version";
     reference
@@ -78,20 +78,20 @@ module ietf-lmap-report {
         description
           "The list of tasks for which results are reported.";
 
-        leaf schedule-name {
+        leaf schedule {
           type lmap:identifier;
           description
             "The name of the schedule that produced the result.";
         }
 
-        leaf action-name {
+        leaf action {
           type lmap:identifier;
           description
             "The name of the action in the schedule that produced
              the result.";
         }
 
-        leaf task-name {
+        leaf task {
           type lmap:identifier;
           description
             "The name of the task that produced the result.";
@@ -123,9 +123,9 @@ module ietf-lmap-report {
           description
             "A tag contains additional information that is passed
              with the result record to the collector. This is the
-             joined set of tags defined for the task object and the
-             action object. A tag can be used to carry the
-             Measurement Cycle ID.";
+             joined set of tags defined for the task object, the
+             schedule object, and the action object. A tag can be
+             used to carry the Measurement Cycle ID.";
         }
 
         leaf event {

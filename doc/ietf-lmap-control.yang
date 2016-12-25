@@ -33,7 +33,7 @@ module ietf-lmap-control {
      (LMAP). This data model is expected to be implemented by a
      measurement agent.";
   
-  revision "2016-11-20" {
+  revision "2016-12-18" {
     description
       "Initial version";
     reference

@@ -27,7 +27,7 @@ module ietf-lmap-common {
      This module defines typedefs and groupings but no schema
      tree elements.";
   
-  revision "2016-11-20" {
+  revision "2016-12-18" {
     description
       "Initial version";
     reference
@@ -94,7 +94,8 @@ module ietf-lmap-common {
       "A cycle number represented in the format YYYYMMDD.HHMMSS
        where YYYY represents the year, MM the month (1..12), DD 
        the day of the months (01..31), HH the hour (00..23), MM
-       the minute (00..59), and SS the second (00..59).";
+       the minute (00..59), and SS the second (00..59). The cycle
+       number is using Coordinated Universal Time (UTC).";
   }
 
   typedef month {
