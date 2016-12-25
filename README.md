@@ -12,7 +12,9 @@ lmapd is the proof-of-concept daemon implementation for the Large-Scale Measurem
 lmapd depends on a few open source libraries:
 
 * [libevent] - an event notification library
-* [libxml2] - an XML parser written in C
+* [libxml2] - an XML library written in C
+* [libjson-c] - a JSON library written in C
+* [libcheck] - a unit testing framework for C
 
 ### Installation
 
@@ -104,6 +106,8 @@ GPLv3
 
 [libevent]:http://libevent.org/
 [libxml2]:http://www.xmlsoft.org/
+[libjson-c]:https://github.com/json-c/json-c
+[libcheck]:https://libcheck.github.io/check/
 [LMAP]:https://tools.ietf.org/wg/lmap/
 [IETF]:http://www.ietf.org/
 [Leone]:http://www.leone-project.eu/
