@@ -30,6 +30,7 @@ extern int lmap_xml_parse_config_path(struct lmap *lmap, const char *path);
 extern int lmap_xml_parse_config_file(struct lmap *lmap, const char *file);
 extern int lmap_xml_parse_config_string(struct lmap *lmap, const char *string);
 
+extern int lmap_xml_parse_state_path(struct lmap *lmap, const char *path);
 extern int lmap_xml_parse_state_file(struct lmap *lmap, const char *file);
 extern int lmap_xml_parse_state_string(struct lmap *lmap, const char *string);
 

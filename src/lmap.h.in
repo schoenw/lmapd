@@ -337,6 +337,7 @@ extern int lmap_schedule_set_workspace(struct schedule *schedule, const char *va
 struct task {
     char *name;
     struct registry *registries;
+    char *version;
     char *program;
     struct option *options;
     struct tag *tags;
@@ -355,6 +356,7 @@ extern void lmap_task_free(struct task *task);
 extern int lmap_task_valid(struct lmap *lmap, struct task *task);
 extern int lmap_task_set_name(struct task *task, const char *value);
 extern int lmap_task_add_registry(struct task *task, struct registry *registry);
+extern int lmap_task_set_version(struct task *task, const char *value);
 extern int lmap_task_set_program(struct task *task, const char *value);
 extern int lmap_task_add_option(struct task *task, struct option *option);
 extern int lmap_task_add_tag(struct task *task, const char *value);

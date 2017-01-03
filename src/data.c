@@ -813,6 +813,32 @@ lmap_capability_add_tag(struct capability *capability, const char *value)
     return add_tag(&capability->tags, value, __FUNCTION__);
 }
 
+int
+lmap_capability_add_task(struct capability *capability, struct task *task)
+{
+    struct task **tail = &capability->tasks;
+    struct task *cur = NULL;
+
+    if (! task->name) {
+	lmap_err("unnamed task");
+	return -1;
+    }
+
+    while (*tail != NULL) {
+	cur = *tail;
+	if (cur) {
+	    if (! strcmp(cur->name, task->name)) {
+		lmap_err("duplicate task '%s'", task->name);
+		return -1;
+	    }
+	}
+	tail = &((*tail)->next);
+    }
+    *tail = task;
+
+    return 0;
+}
+
 void
 lmap_capability_add_system_tags(struct capability *capability)
 {
@@ -1569,6 +1595,7 @@ lmap_task_free(struct task *task)
 	    task->registries = task->registries->next;
 	    lmap_registry_free(old);
 	}
+	xfree(task->version);
 	xfree(task->program);
 	free_all_options(task->options);
 	free_all_tags(task->tags);
@@ -1603,6 +1630,12 @@ int
 lmap_task_set_name(struct task *task, const char *value)
 {
     return set_lmap_identifier(&task->name, value, __FUNCTION__);
+}
+
+int
+lmap_task_set_version(struct task *task, const char *value)
+{
+    return set_string(&task->version, value, __FUNCTION__);
 }
 
 int
@@ -2168,6 +2201,45 @@ lmapd_set_config_path(struct lmapd *lmapd, const char *value)
     }
 
     ret = set_string(&lmapd->config_path, name ? name : value, __FUNCTION__);
+    xfree(name);
+    return ret;
+}
+
+int
+lmapd_set_capability_path(struct lmapd *lmapd, const char *value)
+{
+    int ret;
+    size_t len;
+    struct stat sb;
+    char *name = NULL;
+
+    if (stat(value, &sb) == -1) {
+    invalid:
+	lmap_err("invalid capability path or file '%s'", value);
+	return -1;
+    }
+
+    if (S_ISREG(sb.st_mode) || S_ISDIR(sb.st_mode)) {
+	return set_string(&lmapd->capability_path, value, __FUNCTION__);
+    } else {
+	goto invalid;
+    }
+
+    /*
+     * Try to find the capability file by appending a capability file
+     * name to the capability path.
+     */
+    
+    len = strlen(value) + strlen(LMAPD_CONFIG_FILE) + 2;
+    name = xcalloc(len, 1, __FUNCTION__);
+    snprintf(name, len, "%s/%s", value, LMAPD_CAPABILITY_FILE);
+    if (! name || stat(name, &sb) == -1 || ! S_ISREG(sb.st_mode)) {
+	lmap_err("invalid capability file '%s'", name);
+	xfree(name);
+	return -1;
+    }
+
+    ret = set_string(&lmapd->capability_path, name ? name : value, __FUNCTION__);
     xfree(name);
     return ret;
 }

@@ -57,6 +57,7 @@ usage(FILE *f)
 	    "\t-z clean the workspace before starting\n"
 	    "\t-q path to queue directory\n" 
 	    "\t-c path to config directory or file\n"
+	    "\t-b path to capability directory or file\n"
 	    "\t-r path to run directory (pid file and status file)\n"
 	    "\t-v show version information and exit\n"
 	    "\t-h show brief usage information and exit\n",
@@ -151,6 +152,13 @@ read_config(struct lmapd *lmapd)
 	lmapd->lmap->agent->last_started = time(NULL);
     }
 
+    ret = lmap_xml_parse_state_path(lmapd->lmap, lmapd->capability_path);
+    if (ret != 0) {
+	lmap_free(lmapd->lmap);
+	lmapd->lmap = NULL;
+	return -1;
+    }
+
     if (!lmapd->lmap->capabilities) {
 	lmapd->lmap->capabilities = lmap_capability_new();
     }
@@ -170,11 +178,12 @@ main(int argc, char *argv[])
 {
     int opt, daemon = 0, noop = 0, state = 0, zap = 0, valid = 0, ret = 0;
     char *config_path = NULL;
+    char *capability_path = NULL;
     char *queue_path = NULL;
     char *run_path = NULL;
     pid_t pid;
     
-    while ((opt = getopt(argc, argv, "fnszq:c:r:vh")) != -1) {
+    while ((opt = getopt(argc, argv, "fnszq:c:b:r:vh")) != -1) {
 	switch (opt) {
 	case 'f':
 	    daemon = 1;
@@ -193,6 +202,9 @@ main(int argc, char *argv[])
 	    break;
 	case 'c':
 	    config_path = optarg;
+	    break;
+	case 'b':
+	    capability_path = optarg;
 	    break;
 	case 'r':
 	    run_path = optarg;
@@ -220,10 +232,12 @@ main(int argc, char *argv[])
     openlog("lmapd", LOG_PID | LOG_NDELAY, LOG_DAEMON);
     
     (void) lmapd_set_config_path(lmapd,
-				 config_path ? config_path : LMAPD_CONFIG_DIR);
+		config_path ? config_path : LMAPD_CONFIG_DIR);
     if (!lmapd->config_path) {
 	exit(EXIT_FAILURE);
     }
+    (void) lmapd_set_capability_path(lmapd,
+		capability_path ? capability_path : LMAPD_CAPABILITY_DIR);
     
     if (noop || state) {
 	if (read_config(lmapd) != 0) {

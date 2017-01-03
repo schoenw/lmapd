@@ -1594,6 +1594,61 @@ START_TEST(test_parser_state_capabilities)
 }
 END_TEST
 
+START_TEST(test_parser_state_capability_tasks)
+{
+    const char *a =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">"
+        "  <lmapc:lmap xmlns:x=\"urn:example\">"
+        "    <lmapc:capabilities>"
+	"      <lmapc:tasks>"
+	"        <lmapc:task>"
+	"          <lmapc:name>mtr</lmapc:name>"
+	"          <lmapc:version>0.85</lmapc:version>"
+	"          <lmapc:program>/usr/bin/mtr</lmapc:program>"
+	"        </lmapc:task>"
+	"      </lmapc:tasks>"
+        "    </lmapc:capabilities>"
+        "  </lmapc:lmap>"
+        "</data>";
+    const char *x =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<data xmlns:lmapc=\"urn:ietf:params:xml:ns:yang:ietf-lmap-control\">\n"
+        "  <lmapc:lmap>\n"
+        "    <lmapc:capabilities>\n"
+	"      <lmapc:tasks>\n"
+	"        <lmapc:task>\n"
+	"          <lmapc:name>mtr</lmapc:name>\n"
+	"          <lmapc:version>0.85</lmapc:version>\n"
+	"          <lmapc:program>/usr/bin/mtr</lmapc:program>\n"
+	"        </lmapc:task>\n"
+	"      </lmapc:tasks>\n"
+        "    </lmapc:capabilities>\n"
+        "  </lmapc:lmap>\n"
+        "</data>\n";
+    char *b, *c;
+    struct lmap *lmapa = NULL, *lmapb = NULL;
+    
+    lmapa = lmap_new();
+    ck_assert_ptr_ne(lmapa, NULL);
+    ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
+    b = lmap_xml_render_state(lmapa);
+    ck_assert_ptr_ne(b, NULL);
+
+    lmapb = lmap_new();
+    ck_assert_ptr_ne(lmapb, NULL);
+    ck_assert_int_eq(lmap_xml_parse_state_string(lmapb, b), 0);
+    c = lmap_xml_render_state(lmapa);
+    ck_assert_ptr_ne(c, NULL);
+
+    ck_assert_str_eq(b, c);
+    ck_assert_str_eq(c, x);
+
+    lmap_free(lmapa); lmap_free(lmapb);
+    free(b); free(c);
+}
+END_TEST
+
 START_TEST(test_parser_state_schedules)
 {
     const char *a =
@@ -2063,6 +2118,7 @@ Suite * lmap_suite(void)
     tcase_add_test(tc_parser, test_parser_config_merge);
     tcase_add_test(tc_parser, test_parser_state_agent);
     tcase_add_test(tc_parser, test_parser_state_capabilities);
+    tcase_add_test(tc_parser, test_parser_state_capability_tasks);
     tcase_add_test(tc_parser, test_parser_state_schedules);
     tcase_add_test(tc_parser, test_parser_state_actions);
     tcase_add_test(tc_parser, test_parser_report);

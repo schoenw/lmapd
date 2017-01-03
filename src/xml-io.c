@@ -140,81 +140,6 @@ parse_agent(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
     return 0;
 }
 
-/**
- * @brief Parses the capabilities information
- * @details Function to parse the capability object information from the XML config
- * file
- * @return 0 on success, -1 on error
- */
-static int
-parse_capabilities(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
-{
-    int i, j;
-    xmlXPathObjectPtr result;
-    
-    const char *xpath = "//lmapc:lmap/lmapc:capabilities/lmapc:*";
-    
-    struct {
-	char *name;
-	int flags;
-	int (*func)(struct capability *a, const char *c);
-    } tab[] = {
-	{ .name = "version",
-	  .flags = YANG_CONFIG_FALSE,
-	  .func = lmap_capability_set_version },
-	{ .name = "tag",
-	  .flags = YANG_CONFIG_FALSE,
-	  .func = lmap_capability_add_tag },
-	{ .name = NULL, .flags = 0, .func = NULL }
-    };
-    
-    assert(lmap);
-    
-    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
-    if (! result) {
-	lmap_err("error in xpath expression '%s'", xpath);
-	return -1;
-    }
-
-    if (!result->nodesetval || !result->nodesetval->nodeNr) {
-	xmlXPathFreeObject(result);
-	return 0;
-    }
-
-    if (! lmap->capabilities) {
-	lmap->capabilities = lmap_capability_new();
-	if (! lmap->capabilities) {
-	    xmlXPathFreeObject(result);
-	    return -1;
-	}
-    }
-    
-    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
-	xmlNodePtr node = result->nodesetval->nodeTab[i];
-	
-	for (j = 0; tab[j].name; j++) {
-	    if ((tab[j].flags & YANG_KEY)
-		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
-		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
-		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
-		    xmlChar *content = xmlNodeGetContent(node);
-		    tab[j].func(lmap->capabilities, (char *) content);
-		    if (content) {
-			xmlFree(content);
-		    }
-		    break;
-		}
-	    }
-	}
-	if (! tab[j].name) {
-	    lmap_wrn("unexpected element '%s'", node->name);
-	}
-    }
-    xmlXPathFreeObject(result);
-    
-    return 0;
-}
-
 static struct supp *
 parse_suppression(xmlNodePtr supp_node, int what)
 {
@@ -525,6 +450,188 @@ parse_tasks(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
     }
 
     xmlXPathFreeObject(result);
+    return 0;
+}
+
+static struct task *
+parse_capability_task(xmlNodePtr task_node, int what)
+{
+    int j;
+    xmlNodePtr node;
+    struct task *task;
+
+    struct {
+	char *name;
+	int flags;
+	int (*func)(struct task *s, const char *c);
+    } tab[] = {
+	{ .name = "name",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_task_set_name },
+	{ .name = "version",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_task_set_version },
+	{ .name = "program",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_task_set_program },
+	{ .name = NULL, .flags = 0, .func = NULL }
+    };
+
+    task = lmap_task_new();
+    if (! task) {
+	return NULL;
+    }
+
+    for (node = xmlFirstElementChild(task_node);
+	 node; node = xmlNextElementSibling(node)) {
+
+	if (node->ns != task_node->ns) continue;
+
+	if (!xmlStrcmp(node->name, BAD_CAST "function")) {
+	    struct registry *registry = parse_registry(node, what);
+	    lmap_task_add_registry(task, registry);
+	    continue;
+	}
+
+	for (j = 0; tab[j].name; j++) {
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(task, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
+		}
+	    }
+	}
+	if (! tab[j].name) {
+	    lmap_wrn("unexpected element '%s'", node->name);
+	}
+    }
+
+    return task;
+}
+
+/**
+ * @brief Parses the capability tasks information
+ * @details Function to parse the capability task information from the
+ * XML config file
+ * @return 0 on success, -1 on error
+ */
+static int
+parse_capability_tasks(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
+{
+    int i;
+    xmlXPathObjectPtr result;
+    struct task *task;
+    
+    const char *xpath = "//lmapc:lmap/lmapc:capabilities/lmapc:tasks/lmapc:task";
+
+    assert(lmap);
+
+    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
+    if (! result) {
+	lmap_err("error in xpath expression '%s'", xpath);
+	return -1;
+    }
+
+    if (! lmap->capabilities) {
+	lmap->capabilities = lmap_capability_new();
+	if (! lmap->capabilities) {
+	    xmlXPathFreeObject(result);
+	    return -1;
+	}
+    }
+    
+    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
+	task = parse_capability_task(result->nodesetval->nodeTab[i], what);
+	if (task) {
+	    lmap_capability_add_task(lmap->capabilities, task);
+	}
+    }
+
+    xmlXPathFreeObject(result);
+    return 0;
+}
+
+/**
+ * @brief Parses the capabilities information
+ * @details Function to parse the capability object information from the
+ * XML config file
+ * @return 0 on success, -1 on error
+ */
+static int
+parse_capabilities(struct lmap *lmap, xmlXPathContextPtr ctx, int what)
+{
+    int i, j;
+    xmlXPathObjectPtr result;
+    
+    const char *xpath = "//lmapc:lmap/lmapc:capabilities/lmapc:*";
+    
+    struct {
+	char *name;
+	int flags;
+	int (*func)(struct capability *a, const char *c);
+    } tab[] = {
+	{ .name = "version",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_capability_set_version },
+	{ .name = "tag",
+	  .flags = YANG_CONFIG_FALSE,
+	  .func = lmap_capability_add_tag },
+	{ .name = NULL, .flags = 0, .func = NULL }
+    };
+    
+    assert(lmap);
+    
+    result = xmlXPathEvalExpression(BAD_CAST xpath, ctx);
+    if (! result) {
+	lmap_err("error in xpath expression '%s'", xpath);
+	return -1;
+    }
+
+    if (!result->nodesetval || !result->nodesetval->nodeNr) {
+	xmlXPathFreeObject(result);
+	return 0;
+    }
+
+    if (! lmap->capabilities) {
+	lmap->capabilities = lmap_capability_new();
+	if (! lmap->capabilities) {
+	    xmlXPathFreeObject(result);
+	    return -1;
+	}
+    }
+    
+    for (i = 0; result->nodesetval && i < result->nodesetval->nodeNr; i++) {
+	xmlNodePtr node = result->nodesetval->nodeTab[i];
+
+	for (j = 0; tab[j].name; j++) {
+	    if ((tab[j].flags & YANG_KEY)
+		|| (what & PARSE_CONFIG_TRUE && tab[j].flags & YANG_CONFIG_TRUE)
+		|| (what & PARSE_CONFIG_FALSE && tab[j].flags & YANG_CONFIG_FALSE)) {
+		if (!xmlStrcmp(node->name, BAD_CAST "tasks")) {
+		    continue;
+		}
+		if (!xmlStrcmp(node->name, BAD_CAST tab[j].name)) {
+		    xmlChar *content = xmlNodeGetContent(node);
+		    tab[j].func(lmap->capabilities, (char *) content);
+		    if (content) {
+			xmlFree(content);
+		    }
+		    break;
+		}
+	    }
+	}
+	if (! tab[j].name) {
+	    lmap_wrn("unexpected element '%s'", node->name);
+	}
+    }
+    xmlXPathFreeObject(result);
+    
     return 0;
 }
 
@@ -1054,8 +1161,9 @@ parse_control(struct lmap *lmap, xmlDocPtr doc, int what)
     struct {
 	int (*parse)(struct lmap *lmap, xmlXPathContextPtr ctx, int what);
     } tab[] = {
-	{ parse_agent },
 	{ parse_capabilities },
+	{ parse_capability_tasks },
+	{ parse_agent },
 	{ parse_schedules },
 	{ parse_suppressions },
 	{ parse_tasks },
@@ -1193,6 +1301,45 @@ static int
 parse_state_doc(struct lmap *lmap, xmlDocPtr doc)
 {
     return parse_control(lmap, doc, (PARSE_CONFIG_TRUE | PARSE_CONFIG_FALSE));
+}
+
+int
+lmap_xml_parse_state_path(struct lmap *lmap, const char *path)
+{
+    int ret = 0;
+    char filepath[PATH_MAX];
+    struct dirent *dp;
+    DIR *dfd;
+    
+    assert(path);
+
+    dfd = opendir(path);
+    if (!dfd) {
+	if (errno == ENOTDIR) {
+	    return lmap_xml_parse_state_file(lmap, path);
+	} else {
+	    lmap_err("cannot read capability path '%s'", path);
+	    return -1;
+	}
+    }
+
+    while ((dp = readdir(dfd)) != NULL) {
+	size_t len = strlen(dp->d_name);
+	if (len < 5) {
+	    continue;
+	}
+	if (strcmp(dp->d_name + len - 4, ".xml")) {
+	    continue;
+	}
+	(void) snprintf(filepath, sizeof(filepath), "%s/%s", path, dp->d_name);
+	if (lmap_xml_parse_state_file(lmap, filepath) < 0) {
+	    ret = -1;
+	    break;
+	}
+    }
+    (void) closedir(dfd);
+    
+    return ret;
 }
 
 int
@@ -1851,32 +1998,6 @@ render_agent(struct agent *agent, xmlNodePtr root, xmlNsPtr ns, int what)
 }
 
 static void
-render_capabilities(struct capability *capability, xmlNodePtr root, xmlNsPtr ns, int what)
-{
-    struct tag *tag;
-    xmlNodePtr node;
-
-    if (! capability) {
-	return;
-    }
-
-    node = xmlNewChild(root, ns, BAD_CAST "capabilities", NULL);
-    if (! node) {
-	return;
-    }
-
-    if (what & RENDER_CONFIG_FALSE) {
-	if (capability->version) {
-	    render_leaf(node, ns, "version", capability->version);
-	}
-    }
-
-    for (tag = capability->tags; tag; tag = tag->next) {
-	render_leaf(node, ns, "tag", tag->tag);
-    }
-}
-
-static void
 render_agent_report(struct agent *agent, xmlNodePtr root, xmlNsPtr ns)
 {
     if (! agent) {
@@ -2150,8 +2271,11 @@ render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns, int what)
 	for (registry = task->registries; registry; registry = registry->next) {
 	    render_registry(registry, node, ns);
 	}
+	if (what & RENDER_CONFIG_FALSE) {
+	    render_leaf(node, ns, "version", task->version);
+	}
+	render_leaf(node, ns, "program", task->program);
 	if (what & RENDER_CONFIG_TRUE) {
-	    render_leaf(node, ns, "program", task->program);
 	    for (option = task->options; option; option = option->next) {
 		render_option(option, node, ns);
 	    }
@@ -2160,6 +2284,38 @@ render_tasks(struct task *task, xmlNodePtr root, xmlNsPtr ns, int what)
 	    }
 	}
     }
+}
+
+static void
+render_capabilities(struct capability *capability, xmlNodePtr root, xmlNsPtr ns, int what)
+{
+    struct tag *tag;
+    xmlNodePtr node;
+
+    if (! capability) {
+	return;
+    }
+    
+    if (! (what & RENDER_CONFIG_FALSE)) {
+	return;
+    }
+
+    if (! capability->version && ! capability->tags && ! capability->tasks) {
+	return;
+    }
+
+    node = xmlNewChild(root, ns, BAD_CAST "capabilities", NULL);
+    if (! node) {
+	return;
+    }
+
+    if (capability->version) {
+	render_leaf(node, ns, "version", capability->version);
+    }
+    for (tag = capability->tags; tag; tag = tag->next) {
+	render_leaf(node, ns, "tag", tag->tag);
+    }
+    render_tasks(capability->tasks, node, ns, what);
 }
 
 static void
@@ -2384,8 +2540,8 @@ render_control(struct lmap *lmap, int what)
 	goto exit;
     }
     
-    render_agent(lmap->agent, node, ns, what);
     render_capabilities(lmap->capabilities, node, ns, what);
+    render_agent(lmap->agent, node, ns, what);
     render_tasks(lmap->tasks, node, ns, what);
     render_schedules(lmap->schedules, node, ns, what);
     render_suppressions(lmap->supps, node, ns, what);
