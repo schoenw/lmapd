@@ -184,6 +184,27 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
 	lmap_err("task '%s' has no program", task->name);
 	return -1;
     }
+
+    /*
+     * Check that the program of the task is listed as a valid
+     * capability; we do not want to run arbitrary commands.
+     */
+
+    {
+	struct task *tp = NULL;
+	
+	if (lmapd->lmap->capabilities) {
+	    for (tp = lmapd->lmap->capabilities->tasks; tp; tp = tp->next) {
+		if (tp->program && strcmp(task->program, tp->program) == 0) {
+		    break;
+		}
+	    }
+	}
+	if (! tp) {
+	    lmap_err("task '%s' does not match capabilities", task->name);
+	    return -1;
+	}
+    }
     
     if (action->pid) {
 	lmap_wrn("action '%s' still running (pid %d) - skipping",
