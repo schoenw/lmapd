@@ -1,5 +1,5 @@
 # lmapd
-[![Build Status](https://travis-ci.org/schoenw/lmapd.svg?branch=development)](https://travis-ci.org/schoenw/lmapd)
+[![Build Status](https://travis-ci.org/schoenw/lmapd.svg?branch=master)](https://travis-ci.org/schoenw/lmapd)
 
 
 lmapd is the proof-of-concept daemon implementation for the Large-Scale Measurement Platforms (LMAP) information and data model developed by the [LMAP] working group of the [IETF].
