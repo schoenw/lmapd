@@ -80,7 +80,6 @@ $ genhtml app.info
 ### Todo's
 
  - Fix lmapctl timezone bug
- - Implement capabilities/task
  - Implement schedule/duration
  - Implement calendar/timezone-offset
  - Implement suppression/suppress-by-default
