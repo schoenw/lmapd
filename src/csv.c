@@ -21,8 +21,6 @@
 #include "utils.h"
 #include "csv.h"
 
-static const char delimiter = ';';
-
 static void *
 xrealloc(void *ptr, size_t size, const char *func)
 {

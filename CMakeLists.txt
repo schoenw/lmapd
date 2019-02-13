@@ -17,7 +17,7 @@ pkg_check_modules(LIBXML2 REQUIRED libxml-2.0)
 pkg_check_modules(LIBJSONC REQUIRED json-c)
 
 if(CMAKE_COMPILER_IS_GNUCC)
-    add_definitions(-Wall -Werror)
+    add_definitions(-Wall)
 endif(CMAKE_COMPILER_IS_GNUCC)
 
 add_subdirectory(doc)
