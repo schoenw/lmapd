@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/schoenw/lmapd.svg?branch=master)](https://travis-ci.org/schoenw/lmapd)
 
 
-lmapd is the proof-of-concept daemon implementation for the Large-Scale Measurement Platforms (LMAP) information and data model developed by the [LMAP] working group of the [IETF].
+lmapd is the proof-of-concept daemon implementation for the Large-Scale Measurement Platforms (LMAP) information and data model developed by the [LMAP] working group of the [IETF]. The information model was published as [RFC8193] and the data model as [RFC8194].
 
 ### Version
 0.4.1
@@ -111,3 +111,5 @@ GPLv3
 [IETF]:http://www.ietf.org/
 [Leone]:http://www.leone-project.eu/
 [Flamingo]:http://www.fp7-flamingo.eu/
+[RFC8193]:https://doi.org/10.17487/RFC8193
+[RFC8194]:https://doi.org/10.17487/RFC8194
