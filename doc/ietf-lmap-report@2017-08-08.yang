@@ -3,7 +3,7 @@ module ietf-lmap-report {
   yang-version 1.1;
   namespace "urn:ietf:params:xml:ns:yang:ietf-lmap-report";
   prefix "lmapr";
-  
+
   import ietf-yang-types {
     prefix yang;
   }
@@ -12,36 +12,37 @@ module ietf-lmap-report {
   }
 
   organization
-    "IETF Large-Scale Measurement Platforms Working Group";
-  
+    "IETF Large-Scale Measurement of Broadband Performance
+     Working Group";
+
   contact
-    "WG Web:   <http://tools.ietf.org/wg/lmap/>
+    "WG Web:   <https://datatracker.ietf.org/wg/lmap>
      WG List:  <mailto:lmap@ietf.org>
 
      Editor:   Juergen Schoenwaelder
                <j.schoenwaelder@jacobs-university.de>
 
      Editor:   Vaibhav Bajpai
-               <v.bajpai@jacobs-university.de>";
-  
+               <bajpaiv@in.tum.de>";
+
   description
     "This module defines a data model for reporting results from
-     measurement agents, which are part of a Large-Scale Measurement
-     Platform (LMAP), to result data collectors. This data model is
-     expected to be implemented by a collector.";
-  
-  revision "2016-12-18" {
+     Measurement Agents, which are part of a Large-Scale Measurement
+     Platform (LMAP), to result data Collectors.  This data model is
+     expected to be implemented by a Collector.";
+
+  revision "2017-08-08" {
     description
       "Initial version";
     reference
-      "RFC XXX: A YANG Data Model for LMAP Measurement Agents";
+      "RFC 8194: A YANG Data Model for LMAP Measurement Agents";
   }
 
   rpc report {
     description
-      "The report operation is used by an LMAP measurement agent to
-       submit measurement results produced by measurement tasks to
-       a collector.";
+      "The report operation is used by a Measurement Agent to
+       submit measurement results produced by Measurement Tasks to
+       a Collector.";
 
     input {
 
@@ -49,8 +50,8 @@ module ietf-lmap-report {
         type yang:date-and-time;
         mandatory true;
         description
-          "The date and time when this result report was sent to 
-           a collector.";
+          "The date and time when this result report was sent to
+           a Collector.";
       }
 
       leaf agent-id {
@@ -76,64 +77,65 @@ module ietf-lmap-report {
 
       list result {
         description
-          "The list of tasks for which results are reported.";
+          "The list of Tasks for which results are reported.";
 
         leaf schedule {
           type lmap:identifier;
+
           description
-            "The name of the schedule that produced the result.";
+            "The name of the Schedule that produced the result.";
         }
 
         leaf action {
           type lmap:identifier;
           description
-            "The name of the action in the schedule that produced
+            "The name of the Action in the Schedule that produced
              the result.";
         }
 
         leaf task {
           type lmap:identifier;
           description
-            "The name of the task that produced the result.";
+            "The name of the Task that produced the result.";
         }
 
         container parameters {
           description
-            "This container is a place-holder for run-time 
-             parameters defined in task-specific data models
-             augmenting the base lmap report data model.";
-               
+            "This container is a placeholder for runtime
+             parameters defined in Task-specific data models
+             augmenting the base LMAP report data model.";
+
           choice extension {
             description
-              "This choice is provided to augment in different 
+              "This choice is provided to augment in different
                sets of parameters.";
           }
         }
-        
+
         uses lmap:options-grouping {
           description
-            "The list of options there were in use then the
-              measurement was performed. This list must include
-             both the task specific options as well as the action
-             specific options.";
+            "The list of options there were in use when the
+             measurement was performed.  This list must include
+             both the Task-specific options as well as the
+             Action-specific options.";
         }
-      
+
         leaf-list tag {
           type lmap:tag;
           description
             "A tag contains additional information that is passed
-             with the result record to the collector. This is the
-             joined set of tags defined for the task object, the
-             schedule object, and the action object. A tag can be
+             with the result record to the Collector.  This is the
+             joined set of tags defined for the Task object, the
+             Schedule object, and the Action object.  A tag can be
              used to carry the Measurement Cycle ID.";
         }
 
         leaf event {
           type yang:date-and-time;
           description
-            "The date and time of the event that triggered the 
-             schedule of the action that produced the reported
-             result values. The date and time does not include
+            "The date and time of the event that triggered the
+             Schedule of the Action that produced the reported
+             result values.  The date and time does not include
              any added randomization.";
         }
 
@@ -141,80 +143,80 @@ module ietf-lmap-report {
           type yang:date-and-time;
           mandatory true;
           description
-            "The date and time when the task producing
+            "The date and time when the Task producing
              this result started.";
         }
 
         leaf end {
           type yang:date-and-time;
           description
-            "The date and time when the task producing
+            "The date and time when the Task producing
              this result finished.";
         }
 
         leaf cycle-number {
           type lmap:cycle-number;
           description
-            "The optional cycle number is the time closest to 
+            "The optional cycle number is the time closest to
              the time reported in the event leaf that is a multiple
-             of the cycle-interval of the event that triggered the 
-             execution of the schedule. The value is only present
-             if the event that triggered the execution of the 
-             schedule has a defined cycle-interval.";
+             of the cycle-interval of the event that triggered the
+             execution of the Schedule.  The value is only present
+             if the event that triggered the execution of the
+             Schedule has a defined cycle-interval.";
         }
 
         leaf status {
           type lmap:status-code;
           mandatory true;
           description
-            "The status code returned by the execution of this 
-             action.";
+            "The status code returned by the execution of this
+             Action.";
         }
-        
+
         list conflict {
           description
-            "The names of tasks overlapping with the execution
-             of the task that has produced this result.";
+            "The names of Tasks overlapping with the execution
+             of the Task that has produced this result.";
 
           leaf schedule-name {
             type lmap:identifier;
             description
-              "The name of a schedule that might have impacted
-               the execution of the task that has produced this 
+              "The name of a Schedule that might have impacted
+               the execution of the Task that has produced this
                result.";
           }
 
           leaf action-name {
             type lmap:identifier;
             description
-              "The name of an action within the schedule that 
-               might have impacted the execution of the task that 
+              "The name of an Action within the Schedule that
+               might have impacted the execution of the Task that
                has produced this result.";
           }
 
           leaf task-name {
             type lmap:identifier;
             description
-              "The name of the task executed by an action within
-               the schedule that might have impacted the execution
-               of the task that has produced this result.";
+              "The name of the Task executed by an Action within
+               the Schedule that might have impacted the execution
+               of the Task that has produced this result.";
           }
         }
 
         list table {
           description
             "A list of result tables.";
-        
+
           uses lmap:registry-grouping;
-      
+
           leaf-list column {
             type string;
             description
-              "An ordered list of column labels. The order is
+              "An ordered list of column labels.  The order is
                determined by the system and must match the order
                of the columns in the result rows.";
           }
-          
+
           list row {
             description
               "The rows of a result table.";

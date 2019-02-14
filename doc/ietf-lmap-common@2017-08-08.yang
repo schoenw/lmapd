@@ -3,35 +3,36 @@ module ietf-lmap-common {
   yang-version 1.1;
   namespace "urn:ietf:params:xml:ns:yang:ietf-lmap-common";
   prefix "lmap";
-  
+
   import ietf-inet-types {
     prefix inet;
   }
 
   organization
-    "IETF Large-Scale Measurement Platforms Working Group";
-  
+    "IETF Large-Scale Measurement of Broadband Performance
+     Working Group";
+
   contact
-    "WG Web:   <http://tools.ietf.org/wg/lmap/>
+    "WG Web:   <https://datatracker.ietf.org/wg/lmap>
      WG List:  <mailto:lmap@ietf.org>
 
      Editor:   Juergen Schoenwaelder
                <j.schoenwaelder@jacobs-university.de>
 
      Editor:   Vaibhav Bajpai
-               <v.bajpai@jacobs-university.de>";
-  
+               <bajpaiv@in.tum.de>";
+
   description
     "This module provides common definitions used by the data
-     models written for Large-Scale Measurement Platforms (LMAP).
+     models written for Large-Scale Measurement Platforms (LMAPs).
      This module defines typedefs and groupings but no schema
      tree elements.";
-  
-  revision "2016-12-18" {
+
+  revision "2017-08-08" {
     description
       "Initial version";
     reference
-      "RFC XXX: A YANG Data Model for LMAP Measurement Agents";
+      "RFC 8194: A YANG Data Model for LMAP Measurement Agents";
   }
 
   /*
@@ -43,7 +44,7 @@ module ietf-lmap-common {
       length "1..max";
     }
     description
-      "An string value used to name something.";
+      "A string value used to name something.";
   }
 
   typedef tag {
@@ -67,8 +68,8 @@ module ietf-lmap-common {
          [seq]     matches any character in seq
          [!seq]    matches any character not in seq
 
-       A backslash followed by a character matches the following 
-       character. In particular:
+       A backslash followed by a character matches the following
+       character.  In particular:
 
          \*        matches *
          \?        matches ?
@@ -92,9 +93,9 @@ module ietf-lmap-common {
     }
     description
       "A cycle number represented in the format YYYYMMDD.HHMMSS
-       where YYYY represents the year, MM the month (1..12), DD 
+       where YYYY represents the year, MM the month (1..12), DD
        the day of the months (01..31), HH the hour (00..23), MM
-       the minute (00..59), and SS the second (00..59). The cycle
+       the minute (00..59), and SS the second (00..59).  The cycle
        number is using Coordinated Universal Time (UTC).";
   }
 
@@ -120,6 +121,7 @@ module ietf-lmap-common {
         description
           "April of the Gregorian calendar.";
       }
+
       enum may {
         value 5;
         description
@@ -186,7 +188,7 @@ module ietf-lmap-common {
       type wildcard;
     }
     description
-      "A day of a months or a wildcard indicating all days
+      "A day of a month or a wildcard indicating all days
        of a month.";
   }
 
@@ -212,6 +214,7 @@ module ietf-lmap-common {
         description
           "Thursday of the Gregorian calendar.";
       }
+
       enum friday {
         value 5;
         description
@@ -226,11 +229,15 @@ module ietf-lmap-common {
         value 7;
         description
           "Sunday of the Gregorian calendar.";
-      }      
+      }
     }
     description
      "A type modeling the weekdays in the Gregorian calendar.
       The numbering follows the ISO 8601 scheme.";
+    reference
+     "ISO 8601:2004: Data elements and interchange formats --
+                     Information interchange -- Representation
+                     of dates and times";
   }
 
   typedef weekday-or-all {
@@ -270,7 +277,7 @@ module ietf-lmap-common {
       type wildcard;
     }
     description
-      "A minute of an hour or a wildcard indicating all 
+      "A minute of an hour or a wildcard indicating all
        minutes of an hour.";
   }
 
@@ -286,18 +293,18 @@ module ietf-lmap-common {
       type wildcard;
     }
     description
-      "A second of a minute or a wildcard indicating all 
+      "A second of a minute or a wildcard indicating all
        seconds of a minute.";
   }
 
   typedef status-code {
     type int32;
     description
-      "A status code returned by the execution of a task. Note
-       that the actual range is implementation dependent but it
+      "A status code returned by the execution of a Task.  Note
+       that the actual range is implementation dependent, but it
        should be portable to use values in the range 0..127 for
-       regular exit codes. By convention, 0 indicates successful
-       termination. Negative values may be used to indicate
+       regular exit codes.  By convention, 0 indicates successful
+       termination.  Negative values may be used to indicate
        abnormal termination due to a signal; the absolute value
        may identify the signal number in this case.";
   }
@@ -307,22 +314,22 @@ module ietf-lmap-common {
       pattern 'Z|[\+\-]\d{2}:\d{2}';
     }
     description
-      "A timezone-offset as it is used by the date-and-time type
-       defined in the ietf-yang-types module. The value Z is 
-       equivalent to +00:00. The value -00:00 indicates and 
+      "A time zone offset as it is used by the date-and-time type
+       defined in the ietf-yang-types module.  The value Z is
+       equivalent to +00:00.  The value -00:00 indicates an
        unknown time-offset.";
     reference
       "RFC 6991: Common YANG Data Types";
   }
-  
+
   /*
    * Groupings
    */
-  
+
   grouping registry-grouping {
     description
       "This grouping models a list of entries in a registry
-       that identify functions of a tasks.";
+       that identify functions of a Task.";
 
     list function {
       key uri;
@@ -345,33 +352,33 @@ module ietf-lmap-common {
 
   grouping options-grouping {
     description
-      "A list of options of a task. Each option is a name/value
+      "A list of options of a Task.  Each option is a name/value
        pair (where the value may be absent).";
 
     list option {
       key "id";
       ordered-by user;
       description
-        "A list of options passed to the task. It is a list of
-         key / value pairs and may be used to model options.
-         Options may be used to identify the role of a task
-         or to pass a channel name to a task.";
+        "A list of options passed to the Task.  It is a list of
+         key/value pairs and may be used to model options.
+         Options may be used to identify the role of a Task
+         or to pass a Channel name to a Task.";
 
       leaf id {
         type lmap:identifier;
         description
-          "An identifier uniquely identifying an option. This
+          "An identifier uniquely identifying an option.  This
            identifier is required by YANG to uniquely identify
-           a name value pair but it otherwise has no semantic
+           a name/value pair, but it otherwise has no semantic
            value";
       }
-        
+
       leaf name {
         type string;
         description
           "The name of the option.";
       }
-      
+
       leaf value {
         type string;
         description
