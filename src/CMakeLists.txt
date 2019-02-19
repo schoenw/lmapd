@@ -35,5 +35,8 @@ target_link_libraries(lmapctl
 	${LIBXML2_LIBRARIES}
 	${LIBJSONC_LIBRARIES})
 
+if(BUILD_SHARED_LIBS)
+    install(TARGETS lmap LIBRARY DESTINATION lib)
+endif(BUILD_SHARED_LIBS)
 install(TARGETS lmapd DESTINATION bin)
 install(TARGETS lmapctl DESTINATION bin)
