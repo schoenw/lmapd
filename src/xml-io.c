@@ -369,9 +369,6 @@ parse_task(xmlNodePtr task_node, int what)
 	{ .name = "tag",
 	  .flags = YANG_CONFIG_TRUE,
 	  .func = lmap_task_add_tag },
-	{ .name = "suppress-by-default",
-	  .flags = YANG_CONFIG_TRUE,
-	  .func = lmap_task_set_suppress_by_default },
 	{ .name = NULL, .flags = 0, .func = NULL }
     };
 

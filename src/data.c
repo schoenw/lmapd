@@ -1682,18 +1682,6 @@ lmap_task_add_tag(struct task *task, const char *value)
     return add_tag(&task->tags, value, __FUNCTION__);
 }
 
-int
-lmap_task_set_suppress_by_default(struct task *task, const char *value)
-{
-    int ret;
-    
-    ret = set_boolean(&task->suppress_by_default, value, __FUNCTION__);
-    if (ret == 0) {
-	task->flags |= LMAP_TASK_FLAG_SUPPRESS_BY_DEFAULT_SET;
-    }
-    return ret;
-}
-
 /*
  * struct schedule functions...
  */

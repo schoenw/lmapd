@@ -341,7 +341,6 @@ struct task {
     char *program;
     struct option *options;
     struct tag *tags;
-    int suppress_by_default;
     
     struct program *tool;
     int option_count;
@@ -360,9 +359,6 @@ extern int lmap_task_set_version(struct task *task, const char *value);
 extern int lmap_task_set_program(struct task *task, const char *value);
 extern int lmap_task_add_option(struct task *task, struct option *option);
 extern int lmap_task_add_tag(struct task *task, const char *value);
-extern int lmap_task_set_suppress_by_default(struct task *task, const char *value);
-
-#define LMAP_TASK_FLAG_SUPPRESS_BY_DEFAULT_SET	0x01
 
 /**
  * A struct event is used to hold all config and state
