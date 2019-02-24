@@ -237,21 +237,33 @@ render_result(struct result *res, json_object *jobj)
 char *
 lmap_json_render_report(struct lmap *lmap)
 {
-    const char *report = NULL;
+    char *report = NULL;
     json_object *jobj, *aobj, *robj;
     struct result *res;
+    const char *r1;
 
     assert(lmap);
 
-    jobj = json_object_new_object();
-    robj = json_object_new_object();
+    if (!(jobj = json_object_new_object()))
+	return NULL;
+    if (!(robj = json_object_new_object()))
+	goto err_exit;
+
     json_object_object_add(jobj, LMAPR_JSON_NAMESPACE ":" "report", robj);
     render_agent_report(lmap->agent, robj);
-    aobj = json_object_new_array();
+
+    if (!(aobj = json_object_new_array()))
+	goto err_exit;
     json_object_object_add(robj, "result", aobj);
     for (res = lmap->results; res; res = res->next) {
 	render_result(res, aobj);
     }
-    report = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
-    return report ? strdup(report) : NULL;
+
+    r1 = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
+    if (r1)
+	report = strdup(r1);
+
+err_exit:
+    json_object_put(jobj);
+    return report;
 }
