@@ -2157,79 +2157,25 @@ lmapd_free(struct lmapd *lmapd)
 int
 lmapd_set_config_path(struct lmapd *lmapd, const char *value)
 {
-    int ret;
-    size_t len;
     struct stat sb;
-    char *name = NULL;
 
-    if (stat(value, &sb) == -1) {
-    invalid:
-	lmap_err("invalid config path or file '%s'", value);
-	return -1;
-    }
-
-    if (S_ISREG(sb.st_mode) || S_ISDIR(sb.st_mode)) {
+    if (!stat(value, &sb) && (S_ISREG(sb.st_mode) || S_ISDIR(sb.st_mode)))
 	return set_string(&lmapd->config_path, value, __FUNCTION__);
-    } else {
-	goto invalid;
-    }
 
-    /*
-     * Try to find the configuration file by appending a config file
-     * name to the config path.
-     */
-    
-    len = strlen(value) + strlen(LMAPD_CONFIG_FILE) + 2;
-    name = xcalloc(len, 1, __FUNCTION__);
-    snprintf(name, len, "%s/%s", value, LMAPD_CONFIG_FILE);
-    if (! name || stat(name, &sb) == -1 || ! S_ISREG(sb.st_mode)) {
-	lmap_err("invalid config file '%s'", name);
-	xfree(name);
-	return -1;
-    }
-
-    ret = set_string(&lmapd->config_path, name ? name : value, __FUNCTION__);
-    xfree(name);
-    return ret;
+    lmap_err("invalid config path or file '%s'", value);
+    return -1;
 }
 
 int
 lmapd_set_capability_path(struct lmapd *lmapd, const char *value)
 {
-    int ret;
-    size_t len;
     struct stat sb;
-    char *name = NULL;
 
-    if (stat(value, &sb) == -1) {
-    invalid:
-	lmap_err("invalid capability path or file '%s'", value);
-	return -1;
-    }
-
-    if (S_ISREG(sb.st_mode) || S_ISDIR(sb.st_mode)) {
+    if (!stat(value, &sb) && (S_ISREG(sb.st_mode) || S_ISDIR(sb.st_mode)))
 	return set_string(&lmapd->capability_path, value, __FUNCTION__);
-    } else {
-	goto invalid;
-    }
 
-    /*
-     * Try to find the capability file by appending a capability file
-     * name to the capability path.
-     */
-    
-    len = strlen(value) + strlen(LMAPD_CONFIG_FILE) + 2;
-    name = xcalloc(len, 1, __FUNCTION__);
-    snprintf(name, len, "%s/%s", value, LMAPD_CAPABILITY_FILE);
-    if (! name || stat(name, &sb) == -1 || ! S_ISREG(sb.st_mode)) {
-	lmap_err("invalid capability file '%s'", name);
-	xfree(name);
-	return -1;
-    }
-
-    ret = set_string(&lmapd->capability_path, name ? name : value, __FUNCTION__);
-    xfree(name);
-    return ret;
+    lmap_err("invalid capability path or file '%s'", value);
+    return -1;
 }
 
 int
