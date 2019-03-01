@@ -1230,6 +1230,9 @@ lmap_xml_parse_config_path(struct lmap *lmap, const char *path)
 	if (len < 5) {
 	    continue;
 	}
+	if (dp->d_name[0] == '.') {
+	    continue;
+	}
 	if (strcmp(dp->d_name + len - 4, ".xml")) {
 	    continue;
 	}
@@ -1323,6 +1326,9 @@ lmap_xml_parse_state_path(struct lmap *lmap, const char *path)
     while ((dp = readdir(dfd)) != NULL) {
 	size_t len = strlen(dp->d_name);
 	if (len < 5) {
+	    continue;
+	}
+	if (dp->d_name[0] == '.') {
 	    continue;
 	}
 	if (strcmp(dp->d_name + len - 4, ".xml")) {
