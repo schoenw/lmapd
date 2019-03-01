@@ -56,7 +56,7 @@ mksafe(const char *name)
     const char safe[] = "-.,_";
     const char hex[] = "0123456789ABCDEF";
     static char save_name[NAME_MAX];
-    
+
     for (i = 0, j = 0; name[i] && j < NAME_MAX-1; i++) {
 	if (isalnum(name[i]) || strchr(safe, name[i])) {
 	    save_name[j++] = name[i];
@@ -94,7 +94,7 @@ remove_cb(const char *fpath, const struct stat *sb,
     (void) sb;
     (void) typeflag;
     (void) ftwbuf;
-    
+
     if (remove(fpath)) {
 	lmap_err("cannot remove %s", fpath);
 	/* we continue to remove the rest */
@@ -181,7 +181,7 @@ lmapd_workspace_clean(struct lmapd *lmapd)
 	lmap_err("failed to open queue directory '%s'", lmapd->queue_path);
 	return -1;
     }
-    
+
     while ((dp = readdir(dfd)) != NULL) {
 	if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) {
 	    continue;
@@ -345,7 +345,7 @@ lmapd_workspace_init(struct lmapd *lmapd)
     struct schedule *sched;
     struct action *act;
     char filepath[PATH_MAX];
-    
+
     assert(lmapd);
 
     if (!lmapd->lmap || !lmapd->queue_path) {
@@ -390,7 +390,7 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
     char buf[128];
     struct option *option;
     struct tag *tag;
-    
+
     assert(action && action->name && action->workspace);
 
     fd = lmapd_workspace_action_open_meta(schedule, action,
@@ -405,7 +405,7 @@ lmapd_workspace_action_meta_add_start(struct schedule *schedule, struct action *
 	(void) close(fd);
 	return -1;
     }
-    
+
     snprintf(buf, sizeof(buf), "%s version %d.%d.%d", LMAPD_LMAPD,
 	     LMAP_VERSION_MAJOR, LMAP_VERSION_MINOR, LMAP_VERSION_PATCH);
     csv_append_key_value(f, delimiter, "magic", buf);
@@ -454,7 +454,7 @@ lmapd_workspace_action_meta_add_end(struct schedule *schedule, struct action *ac
     char buf[128];
 
     assert(action && action->name && action->workspace);
-    
+
     fd = lmapd_workspace_action_open_meta(schedule, action,
 					  O_WRONLY | O_APPEND);
     if (fd == -1) {
@@ -466,7 +466,7 @@ lmapd_workspace_action_meta_add_end(struct schedule *schedule, struct action *ac
 	(void) close(fd);
 	return -1;
     }
-    
+
     snprintf(buf, sizeof(buf), "%lu", action->last_completion);
     csv_append_key_value(f, delimiter, "end", buf);
     snprintf(buf, sizeof(buf), "%d", action->last_status);

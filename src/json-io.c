@@ -38,7 +38,7 @@ static void
 render_leaf(json_object *jobj, char *name, char *content)
 {
     assert(jobj);
-    
+
     if (name && content) {
 	json_object_object_add(jobj, name, json_object_new_string(content));
     }
@@ -55,7 +55,7 @@ render_leaf_datetime(json_object *jobj, char *name, time_t *tp)
 {
     char buf[32];
     struct tm *tmp;
-    
+
     tmp = localtime(tp);
     strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S%z", tmp);
 
@@ -63,22 +63,22 @@ render_leaf_datetime(json_object *jobj, char *name, time_t *tp)
      * Hack to insert the ':' in the timezone offset since strftime()
      * implementations do not generate this separator.
      */
-    
+
     if (strlen(buf) == 24) {
 	buf[25] = buf[24];
 	buf[24] = buf[23];
 	buf[23] = buf[22];
 	buf[22] = ':';
     }
-    
-    render_leaf(jobj, name, buf); 
+
+    render_leaf(jobj, name, buf);
 }
 
 static void
 render_option(struct option *option, json_object *jobj)
 {
     json_object *robj;
-    
+
     if (! option) {
 	return;
     }
@@ -169,13 +169,13 @@ render_result(struct result *res, json_object *jobj)
     struct option *option;
     struct tag *tag;
     struct table *tab;
-    
+
     robj = json_object_new_object();
     if (! robj) {
 	return;
     }
     json_object_array_add(jobj, robj);
-    
+
     render_leaf(robj, "schedule", res->schedule);
     render_leaf(robj, "action", res->action);
     render_leaf(robj, "task", res->task);
@@ -193,15 +193,15 @@ render_result(struct result *res, json_object *jobj)
 	    json_object_array_add(aobj, json_object_new_string(tag->tag));
 	}
     }
-    
+
     if (res->event) {
 	render_leaf_datetime(robj, "event", &res->start);
     }
-    
+
     if (res->start) {
 	render_leaf_datetime(robj, "start", &res->start);
     }
-    
+
     if (res->end) {
 	render_leaf_datetime(robj, "end", &res->end);
     }

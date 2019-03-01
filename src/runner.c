@@ -78,7 +78,7 @@ rand_interval(unsigned int min, unsigned int max)
     do {
 	r = rand();
     } while (r >= limit);
-    
+
     return min + (r / buckets);
 }
 
@@ -98,7 +98,7 @@ find_action_by_pid(struct lmap *lmap, pid_t pid)
 {
     struct schedule *sched;
     struct action *act;
-    
+
     assert(lmap);
 
     for (sched = lmap->schedules; sched; sched = sched->next) {
@@ -117,7 +117,7 @@ find_schedule_by_pid(struct lmap *lmap, pid_t pid)
 {
     struct schedule *sched;
     struct action *act;
-    
+
     assert(lmap);
 
     for (sched = lmap->schedules; sched; sched = sched->next) {
@@ -192,7 +192,7 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
 
     {
 	struct task *tp = NULL;
-	
+
 	if (lmapd->lmap->capabilities) {
 	    for (tp = lmapd->lmap->capabilities->tasks; tp; tp = tp->next) {
 		if (tp->program && strcmp(task->program, tp->program) == 0) {
@@ -205,7 +205,7 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
 	    return -1;
 	}
     }
-    
+
     if (action->pid) {
 	lmap_wrn("action '%s' still running (pid %d) - skipping",
 		 action->name, action->pid);
@@ -220,7 +220,7 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
      * elements in argv is on some systems a runtime parameter.
      * Perhaps we should dynamically allocate an argv?
      */
-    
+
     i = 0;
     argv[i] = task->program;
     for (option = task->options; option; option = option->next) {
@@ -290,7 +290,7 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
     if (lmapd_workspace_action_meta_add_start(schedule, action, task)) {
 	exit(EXIT_FAILURE);
     }
-    
+
     /*
      * Setup redirection. Data goes into .data files.
      */
@@ -327,9 +327,9 @@ schedule_exec(struct lmapd *lmapd, struct schedule *schedule)
     }
 
     // lmap_dbg("executing schedule '%s'", schedule->name);
-    
+
     event_base_gettimeofday_cached(lmapd->base, &t);
-    
+
     switch (schedule->mode) {
     case LMAP_SCHEDULE_EXEC_MODE_SEQUENTIAL:
 	schedule->last_invocation = t.tv_sec;
@@ -430,7 +430,7 @@ suppression_start(struct lmapd *lmapd, struct supp *supp)
 	    if (schedule->flags & LMAP_SCHEDULE_FLAG_STOP_RUNNING) {
 		action_kill(lmapd, action);
 	    }
-	
+
 	    if (big_tag_match(supp->match, action->suppression_tags)) {
 		// lmap_dbg("suppressing %s", action->name);
 		if (action->state == LMAP_ACTION_STATE_ENABLED) {
@@ -472,7 +472,7 @@ suppression_end(struct lmapd *lmapd, struct supp *supp)
 	if (schedule->state == LMAP_SCHEDULE_STATE_DISABLED) {
 	    continue;
 	}
-	
+
 	if (big_tag_match(supp->match, schedule->suppression_tags)) {
 	    // lmap_dbg("unsuppressing %s", schedule->name);
 	    if (schedule->cnt_active_suppressions) {
@@ -484,7 +484,7 @@ suppression_end(struct lmapd *lmapd, struct supp *supp)
 		}
 	    }
 	}
-	
+
 	for (action = schedule->actions; action; action = action->next) {
 	    if (action->state == LMAP_ACTION_STATE_DISABLED) {
 		continue;
@@ -533,7 +533,7 @@ lmapd_cleanup(struct lmapd *lmapd)
     if (! lmap) {
 	return;
     }
-    
+
     event_base_gettimeofday_cached(lmapd->base, &t);
 
     while (1) {
@@ -650,7 +650,7 @@ static void
 execute_cb(struct lmapd *lmapd, struct event *event)
 {
     struct schedule *sched;
-    
+
     assert(lmapd && event);
 
     if (! lmapd->lmap) {
@@ -658,11 +658,11 @@ execute_cb(struct lmapd *lmapd, struct event *event)
     }
 
     for (sched = lmapd->lmap->schedules; sched; sched = sched->next) {
-	
+
 	if (sched->state == LMAP_SCHEDULE_STATE_DISABLED) {
 	    goto next;
 	}
-	
+
 	if (! sched->name) {
 	    lmap_err("disabling unnamed schedule");
 	    sched->state = LMAP_SCHEDULE_STATE_DISABLED;
@@ -687,7 +687,7 @@ execute_cb(struct lmapd *lmapd, struct event *event)
 		event_base_gettimeofday_cached(lmapd->base, &t);
 		sched->cycle_number = (t.tv_sec / event->cycle_interval) * event->cycle_interval;
 	    }
-	    
+
 	    schedule_exec(lmapd, sched);
 	    if (event->type == LMAP_EVENT_TYPE_ONE_OFF
 		|| event->type == LMAP_EVENT_TYPE_IMMEDIATE
@@ -718,25 +718,25 @@ static void
 suppress_cb(struct lmapd *lmapd, struct event *event)
 {
     struct supp *supp;
-    
+
     assert(lmapd && event);
-    
+
     if (! lmapd->lmap) {
 	return;
     }
-    
+
     for (supp = lmapd->lmap->supps; supp; supp = supp->next) {
-	
+
 	if (supp->state == LMAP_SUPP_STATE_DISABLED) {
 	    continue;
 	}
-	
+
 	if (! supp->name) {
 	    lmap_err("disabling unnamed suppression");
 	    supp->state = LMAP_SUPP_STATE_DISABLED;
  	    continue;
 	}
-	
+
  	if (supp->start && !strcmp(supp->start, event->name)) {
 	    if (supp->state == LMAP_SUPP_STATE_ENABLED) {
 		suppression_start(lmapd, supp);
@@ -745,11 +745,11 @@ suppress_cb(struct lmapd *lmapd, struct event *event)
 			 supp->name);
 	    }
 	}
-	
+
 	if (supp->end && !strcmp(supp->end, event->name)) {
 	    if (supp->state == LMAP_SUPP_STATE_ACTIVE) {
 		suppression_end(lmapd, supp);
-	    } else 
+	    } else
 		lmap_wrn("suppression '%s' not active - skipping",
 			 supp->name);
 	}
@@ -779,7 +779,7 @@ fire_cb(evutil_socket_t fd, short events, void *context)
 
     suppress_cb(event->lmapd, event);
     execute_cb(event->lmapd, event);
-    
+
     event_free(event->fire_event);
     event->fire_event = NULL;
 }
@@ -818,7 +818,7 @@ trigger_calendar_cb(evutil_socket_t fd, short events, void *context)
     struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
     struct timeval t;
     int match;
-    
+
     (void) fd;
     (void) events;
 
@@ -842,16 +842,16 @@ trigger_calendar_cb(evutil_socket_t fd, short events, void *context)
 	event->trigger_event = NULL;
 	return;
     }
-    
+
     if (match == 0) {
 	tv.tv_sec = 1;
 	event_add(event->trigger_event, &tv);
 	return;
     }
-    
+
     add_random_spread(event, &tv);
     event_gaga(event, &event->fire_event, EV_TIMEOUT, fire_cb, &tv);
-    
+
     tv.tv_sec = match;
     event_add(event->trigger_event, &tv);
 }
@@ -922,11 +922,11 @@ lmapd_run(struct lmapd *lmapd)
 	lmap_err("failed to initialize event base - exiting...");
 	return -1;
     }
-    
+
     /*
      * Register all event callbacks...
      */
-    
+
     for (i = 0; tab[i].name; i++) {
 	if (tab[i].signum) {
 	    tab[i].event = evsignal_new(lmapd->base,
@@ -957,7 +957,7 @@ lmapd_run(struct lmapd *lmapd)
 		struct schedule *sched;
 		struct supp *supp;
 		int used = 0;
-		
+
 		for (sched = lmapd->lmap->schedules; !used && sched; sched = sched->next) {
 		    if (sched->start && ! strcmp(sched->start, event->name)) {
 			used = 1;
@@ -966,7 +966,7 @@ lmapd_run(struct lmapd *lmapd)
 			used = 1;
 		    }
 		}
-		
+
 		for (supp = lmapd->lmap->supps; !used && supp; supp = supp->next) {
 		    if (supp->start && ! strcmp(supp->start, event->name)) {
 			used = 1;
@@ -980,7 +980,7 @@ lmapd_run(struct lmapd *lmapd)
 		    continue;
 		}
 	    }
-	    
+
 	    event->lmapd = lmapd;	/* this avoids a new data structure */
 	    switch (event->type) {
 	    case LMAP_EVENT_TYPE_PERIODIC:
@@ -1020,20 +1020,20 @@ lmapd_run(struct lmapd *lmapd)
 		add_random_spread(event, &tv);
 		event_gaga(event, &event->fire_event, EV_TIMEOUT, fire_cb, &tv);
 		break;
-		
+
 	    case LMAP_EVENT_TYPE_STARTUP:
 	    case LMAP_EVENT_TYPE_IMMEDIATE:
 		add_random_spread(event, &tv);
 		event_gaga(event, &event->fire_event, EV_TIMEOUT, fire_cb, &tv);
 		break;
-		
+
 	    default:
 		lmap_wrn("ignoring event '%s' (not implemented)", event->name);
 		break;
 	    }
 	}
     }
-    
+
     lmap_dbg("event loop starting");
     ret = event_base_dispatch(lmapd->base);
     if (ret != 0) {
@@ -1062,7 +1062,7 @@ lmapd_run(struct lmapd *lmapd)
 	    }
 	}
     }
-    
+
     for (i = 0; tab[i].name; i++) {
 	if (tab[i].event) {
 	    event_free(tab[i].event);
@@ -1074,12 +1074,12 @@ lmapd_run(struct lmapd *lmapd)
      * Cleanup the lmap data model but keep the lmapd daemon state (in
      * case we do a restart).
      */
-    
+
     if (lmapd->lmap) {
 	lmap_free(lmapd->lmap);
 	lmapd->lmap = NULL;
     }
-    
+
     return (ret == 0) ? 0 : -1;
 }
 
@@ -1093,7 +1093,7 @@ lmapd_killall(struct lmapd *lmapd)
     if (! lmapd->lmap) {
 	return;
     }
-    
+
     for (sched = lmapd->lmap->schedules; sched; sched = sched->next) {
 	schedule_kill(lmapd, sched);
     }

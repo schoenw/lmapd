@@ -52,7 +52,7 @@ static int status_cmd(int argc, char *argv[]);
 static int validate_cmd(int argc, char *argv[]);
 static int version_cmd(int argc, char *argv[]);
 
-static struct 
+static struct
 {
     char *command;
     char *description;
@@ -99,7 +99,7 @@ static void
 usage(FILE *f)
 {
     fprintf(f, "usage: %s [-h] [-q queue] [-c config] [-C dir] [-s status]\n"
-	    "\t-q path to queue directory\n" 
+	    "\t-q path to queue directory\n"
 	    "\t-c path to config directory or file\n"
 	    "\t-r path to run directory (pid file and status file)\n"
 	    "\t-C path in which the program is executed\n"
@@ -180,14 +180,14 @@ render_datetime_long(time_t *tp)
      * Hack to insert the ':' in the timezone offset since strftime()
      * implementations do not generate this separator.
      */
-    
+
     if (strlen(buf) == 24) {
 	buf[25] = buf[24];
 	buf[24] = buf[23];
 	buf[23] = buf[22];
 	buf[22] = ':';
     }
-    
+
     return buf;
 }
 
@@ -196,7 +196,7 @@ static char*
 render_uint32(uint32_t num)
 {
     static char buf[32];
-    
+
     if (num > 1000*1000*1000) {
 	snprintf(buf, sizeof(buf), "%uG", ((num/1000/1000)+500)/1000);
     } else if (num > 1000*1000) {
@@ -228,13 +228,13 @@ read_config(struct lmapd *lmapd)
     if (! lmapd->lmap) {
 	return -1;
     }
-    
+
     if (lmap_xml_parse_config_path(lmapd->lmap, lmapd->config_path)) {
 	lmap_free(lmapd->lmap);
 	lmapd->lmap = NULL;
 	return -1;
     }
-    
+
     return 0;
 }
 
@@ -255,26 +255,26 @@ read_state(struct lmapd *lmapd)
 
     snprintf(statefile, sizeof(statefile), "%s/%s",
 	     lmapd->run_path, LMAPD_STATUS_FILE);
-    
+
     lmapd->lmap = lmap_new();
     if (! lmapd->lmap) {
 	return -1;
     }
-    
+
     if (lmap_xml_parse_state_file(lmapd->lmap, statefile)) {
 	lmap_free(lmapd->lmap);
 	lmapd->lmap = NULL;
 	return -1;
     }
-    
+
     return 0;
 }
 
 static int
-clean_cmd(int argc, char *argv[]) 
+clean_cmd(int argc, char *argv[])
 {
     pid_t pid;
-    
+
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
 	       LMAPD_LMAPCTL, argv[0]);
@@ -296,7 +296,7 @@ clean_cmd(int argc, char *argv[])
 }
 
 static int
-config_cmd(int argc, char *argv[]) 
+config_cmd(int argc, char *argv[])
 {
     char *xml;
 
@@ -312,7 +312,7 @@ config_cmd(int argc, char *argv[])
     if (! lmap_valid(lmapd->lmap)) {
 	return 1;
     }
-    
+
     xml = lmap_xml_render_config(lmapd->lmap);
     if (! xml) {
 	return 1;
@@ -323,14 +323,14 @@ config_cmd(int argc, char *argv[])
 }
 
 static int
-help_cmd(int argc, char *argv[]) 
+help_cmd(int argc, char *argv[])
 {
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
 	       LMAPD_LMAPCTL, argv[0]);
 	return 1;
     }
-    
+
     help(stdout);
     return 0;
 }
@@ -339,7 +339,7 @@ static int
 reload_cmd(int argc, char *argv[])
 {
     pid_t pid;
-    
+
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
 	       LMAPD_LMAPCTL, argv[0]);
@@ -386,7 +386,7 @@ report_cmd(int argc, char *argv[])
      * Setup the paths into the workspaces and then load the results
      * found in the current directory.
      */
-    
+
     lmapd_workspace_init(lmapd);
     if (lmapd_workspace_read_results(lmapd) == -1) {
 	return 1;
@@ -412,7 +412,7 @@ static int
 running_cmd(int argc, char *argv[])
 {
     pid_t pid;
-    
+
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
 	       LMAPD_LMAPCTL, argv[0]);
@@ -431,7 +431,7 @@ static int
 shutdown_cmd(int argc, char *argv[])
 {
     pid_t pid;
-    
+
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
 	       LMAPD_LMAPCTL, argv[0]);
@@ -458,7 +458,7 @@ status_cmd(int argc, char *argv[])
     struct lmap *lmap = NULL;
     pid_t pid;
     struct timespec tp = { .tv_sec = 0, .tv_nsec = 87654321 };
-    
+
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
 	       LMAPD_LMAPCTL, argv[0]);
@@ -545,14 +545,14 @@ status_cmd(int argc, char *argv[])
 		   total_attempts ? schedule->cnt_suppressions*100/total_attempts : 0,
 		   total_attempts ? schedule->cnt_overlaps*100/total_attempts : 0,
 		   schedule->cnt_invocations ? schedule->cnt_failures*100/schedule->cnt_invocations : 0);
-	    
+
 	    printf("%5.5s ", render_storage(schedule->storage));
 
 	    if (schedule->last_invocation) {
 		printf("%8.8s%s", "",
 		       render_datetime_short(&schedule->last_invocation));
 	    }
-	    
+
 	    printf("\n");
 
 	    for (action = schedule->actions; action; action = action->next) {
@@ -572,7 +572,7 @@ status_cmd(int argc, char *argv[])
 		default:
 		    state = "?";
 		}
-		
+
 		total_attempts = action->cnt_invocations
 		    + action->cnt_suppressions + action->cnt_overlaps;
 		printf(" %-14.14s ", action->name ? action->name : "???");
@@ -625,7 +625,7 @@ status_cmd(int argc, char *argv[])
 		state = "?";
 		break;
 	    }
-	    
+
 	    printf("%-15.15s ", supp->name ? supp->name : "???");
 	    printf("%-1s ", state);
 
@@ -636,7 +636,7 @@ status_cmd(int argc, char *argv[])
 }
 
 static int
-validate_cmd(int argc, char *argv[]) 
+validate_cmd(int argc, char *argv[])
 {
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
@@ -654,7 +654,7 @@ validate_cmd(int argc, char *argv[])
 }
 
 static int
-version_cmd(int argc, char *argv[]) 
+version_cmd(int argc, char *argv[])
 {
     if (argc != 1) {
 	printf("%s: wrong # of args: should be '%s'\n",
@@ -674,7 +674,7 @@ main(int argc, char *argv[])
     char *config_path = NULL;
     char *queue_path = NULL;
     char *run_path = NULL;
-    
+
     while ((opt = getopt(argc, argv, "q:c:r:C:hjx")) != -1) {
 	switch (opt) {
 	case 'q':
@@ -713,9 +713,9 @@ main(int argc, char *argv[])
     if (! lmapd) {
 	exit(EXIT_FAILURE);
     }
-    
+
     atexit(atexit_cb);
-    
+
     if (optind >= argc) {
 	lmap_err("expected command argument after options");
 	exit(EXIT_FAILURE);

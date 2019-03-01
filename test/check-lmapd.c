@@ -46,12 +46,12 @@ static void alarm_handler(int signum)
 
 void setup(void)
 {
-  
+
 }
 
 void teardown(void)
 {
-  
+
 }
 
 START_TEST(test_lmapd)

@@ -44,7 +44,7 @@ append(FILE *file, const char delimiter, const char *field)
 {
     int i, need_quote = 0;
     const char quote = '"';
-    
+
     if (! field) {
 	fprintf(file, "\n");
 	return;
@@ -57,7 +57,7 @@ append(FILE *file, const char delimiter, const char *field)
 	    break;
 	}
     }
-    
+
     if (need_quote) {
 	fputc(quote, file);
 	for (i = 0; field[i]; i++) {

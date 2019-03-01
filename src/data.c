@@ -80,19 +80,19 @@ set_yang_identifier(char **dp, const char *s, const char *func)
 	    lmap_err("illegal yang-identifier value '%s'", s);
 	    return -1;
 	}
-	
+
 	for (i = 0; s[i]; i++) {
 	    if (!isalpha(s[i]) && !isdigit(s[i])
 		&& s[i] != '_' && s[i] != '-' && s[i] != '.') {
 		goto error;
 	    }
 	}
-	
+
 	if (strncasecmp("xml", s, 3) == 0) {
 	    goto error;
 	}
     }
-    
+
     return set_string(dp, s, func);
 }
 #endif
@@ -115,7 +115,7 @@ set_lmap_identifier(char **dp, const char *s, const char *func)
 	    }
 	}
     }
-    
+
     return set_string(dp, s, func);
 }
 
@@ -195,7 +195,7 @@ set_timezoneoffset(int16_t *ip, const char *s)
     int hours, minutes;
 
     len = strlen(s);
-    
+
     if (len == 1 && s[0] == 'Z') {
 	*ip = 0;
 	return 0;
@@ -352,7 +352,7 @@ lmap_find_event(struct lmap *lmap, const char *name)
     if (!lmap || !name) {
 	return NULL;
     }
-    
+
     for (event = lmap->events; event; event = event->next) {
 	if (event->name && strcmp(event->name, name) == 0) {
 	    return event;
@@ -370,7 +370,7 @@ lmap_find_task(struct lmap *lmap, const char *name)
     if (!lmap || !name) {
 	return NULL;
     }
-    
+
     for (task = lmap->tasks; task; task = task->next) {
 	if (task->name && strcmp(task->name, name) == 0) {
 	    return task;
@@ -388,7 +388,7 @@ lmap_find_schedule(struct lmap *lmap, const char *name)
     if (! lmap || !name) {
 	return NULL;
     }
-    
+
     for (schedule = lmap->schedules; schedule; schedule = schedule->next) {
 	if (schedule->name && strcmp(schedule->name, name) == 0) {
 	    return schedule;
@@ -439,31 +439,31 @@ lmap_free(struct lmap *lmap)
 	    lmap_schedule_free(lmap->schedules);
 	    lmap->schedules = next;
 	}
-	
+
 	while (lmap->supps) {
 	    struct supp *next = lmap->supps->next;
 	    lmap_supp_free(lmap->supps);
 	    lmap->supps = next;
 	}
-	
+
 	while (lmap->tasks) {
 	    struct task *next = lmap->tasks->next;
 	    lmap_task_free(lmap->tasks);
 	    lmap->tasks = next;
 	}
-	
+
 	while (lmap->events) {
 	    struct event *next = lmap->events->next;
 	    lmap_event_free(lmap->events);
 	    lmap->events = next;
 	}
-	
+
 	while (lmap->results) {
 	    struct result *next = lmap->results->next;
 	    lmap_result_free(lmap->results);
 	    lmap->results = next;
 	}
-	
+
 	xfree(lmap);
     }
 }
@@ -737,7 +737,7 @@ int
 lmap_agent_set_report_measurement_point(struct agent *agent, const char *value)
 {
     int ret;
-    
+
     ret = set_boolean(&agent->report_measurement_point, value, __FUNCTION__);
     if (ret == 0) {
 	agent->flags |= LMAP_AGENT_FLAG_REPORT_MEASUREMENT_POINT_SET;
@@ -749,7 +749,7 @@ int
 lmap_agent_set_controller_timeout(struct agent *agent, const char *value)
 {
     int ret;
-    
+
     ret = set_uint32(&agent->controller_timeout, value, __FUNCTION__);
     if (ret == 0) {
 	agent->flags |= LMAP_AGENT_FLAG_CONTROLLER_TIMEOUT_SET;
@@ -1096,7 +1096,7 @@ int
 lmap_supp_set_stop_running(struct supp *supp, const char *value)
 {
     int ret;
-    
+
     ret = set_boolean(&supp->stop_running, value, __FUNCTION__);
     if (ret == 0) {
 	supp->flags |= LMAP_SUPP_FLAG_STOP_RUNNING_SET;
@@ -1280,7 +1280,7 @@ int
 lmap_event_set_interval(struct event *event, const char *value)
 {
     int ret;
-    
+
     ret = set_uint32(&event->interval, value, __FUNCTION__);
     if (ret == 0) {
 	if (event->interval < 1) {
@@ -1296,7 +1296,7 @@ int
 lmap_event_set_start(struct event *event, const char *value)
 {
     int ret;
-    
+
     ret = set_dateandtime(&event->start, value, __FUNCTION__);
     if (ret == 0) {
 	event->flags |= LMAP_EVENT_FLAG_START_SET;
@@ -1308,7 +1308,7 @@ int
 lmap_event_set_end(struct event *event, const char *value)
 {
     int ret;
-    
+
     ret = set_dateandtime(&event->end, value, __FUNCTION__);
     if (ret == 0) {
 	event->flags |= LMAP_EVENT_FLAG_END_SET;
@@ -1320,7 +1320,7 @@ int
 lmap_event_set_random_spread(struct event *event, const char *value)
 {
     int ret;
-    
+
     ret = set_uint32(&event->random_spread, value, __FUNCTION__);
     if (ret == 0) {
 	if (event->random_spread >= RAND_MAX) {
@@ -1337,7 +1337,7 @@ int
 lmap_event_set_cycle_interval(struct event *event, const char *value)
 {
     int ret;
-    
+
     ret = set_uint32(&event->cycle_interval, value, __FUNCTION__);
     if (ret == 0) {
 	event->flags |= LMAP_EVENT_FLAG_CYCLE_INTERVAL_SET;
@@ -1349,7 +1349,7 @@ int
 lmap_event_add_month(struct event *event, const char *value)
 {
     int i;
-    
+
     struct {
 	char *name;
 	uint16_t value;
@@ -1408,7 +1408,7 @@ int
 lmap_event_add_day_of_week(struct event *event, const char *value)
 {
     int i;
-    
+
     struct {
 	char *name;
 	uint8_t value;
@@ -1503,7 +1503,7 @@ lmap_event_set_timezone_offset(struct event *event, const char *value)
 	lmap_err("illegal timezone offset value '%s'", value);
 	return -1;
     }
-    
+
     event->flags |= LMAP_EVENT_FLAG_TIMEZONE_OFFSET_SET;
     return 0;
 }
@@ -1513,7 +1513,7 @@ lmap_event_calendar_match(struct event *event, time_t *now)
 {
     struct tm *tm;
     int wday;
-    
+
     if (event->type != LMAP_EVENT_TYPE_CALENDAR) {
 	return -1;
     }
@@ -1529,38 +1529,38 @@ lmap_event_calendar_match(struct event *event, time_t *now)
 	// lmap_dbg("%s: month does not match", event->name);
 	return 0;
     }
-    
+
     if (event->days_of_month != UINT32_MAX
 	&&  !(1 << (tm->tm_mday) & event->days_of_month)) {
 	// lmap_dbg("%s: day of month does not match", event->name);
 	return 0;
     }
-    
+
     /*
      * Weekdays are counted differently, struct tm has the week
      * starting with sunday while our lmap week starts with
      * monday.
      */
-    
+
     wday = (tm->tm_wday == 0) ? 6 : (tm->tm_wday -1);
     if (event->days_of_week != UINT8_MAX
 	&&  !(1 << (wday) & event->days_of_week)) {
 	// lmap_dbg("%s: day of week does not match", event->name);
 	return 0;
     }
-    
+
     if (event->hours != UINT32_MAX
 	&&  !(1 << (tm->tm_hour) & event->hours)) {
 	// lmap_dbg("%s: hour does not match", event->name);
 	return 0;
     }
-	
+
     if (event->minutes != UINT64_MAX
 	&&  !(1ull << (tm->tm_min) & event->minutes)) {
 	// lmap_dbg("%s: minute does not match", event->name);
 	return 0;
     }
-    
+
     if (event->seconds != UINT64_MAX
 	&&  !(1ull << (tm->tm_sec) & event->seconds)) {
 	// lmap_dbg("%s: second does not match", event->name);
@@ -1802,7 +1802,7 @@ lmap_schedule_set_duration(struct schedule *schedule, const char *value)
 	schedule->end = NULL;
 	schedule->flags &= ~LMAP_SCHEDULE_FLAG_END_SET;
     }
-    
+
     ret = set_uint64(&schedule->duration, value, __FUNCTION__);
     if (ret == 0) {
 	schedule->flags |= LMAP_SCHEDULE_FLAG_DURATION_SET;
@@ -2187,7 +2187,7 @@ lmapd_set_queue_path(struct lmapd *lmapd, const char *value)
 	lmap_err("invalid queue path '%s'", value);
 	return -1;
     }
-    
+
     return set_string(&lmapd->queue_path, value, __FUNCTION__);
 }
 
@@ -2200,7 +2200,7 @@ lmapd_set_run_path(struct lmapd *lmapd, const char *value)
 	lmap_err("invalid run path '%s'", value);
 	return -1;
     }
-    
+
     return set_string(&lmapd->run_path, value, __FUNCTION__);
 }
 
@@ -2237,7 +2237,7 @@ lmap_value_valid(struct lmap *lmap, struct value *val)
 	lmap_err("val requires a value");
 	valid = 0;
     }
-    
+
     return valid;
 }
 
@@ -2284,7 +2284,7 @@ lmap_row_valid(struct lmap *lmap, struct row *row)
     for (val = row->values; val; val = val->next) {
 	valid &= lmap_value_valid(lmap, val);
     }
-    
+
     return valid;
 }
 
@@ -2346,7 +2346,7 @@ lmap_table_valid(struct lmap *lmap, struct table *tab)
     for (row = tab->rows; row; row = row->next) {
 	valid &= lmap_row_valid(lmap, row);
     }
-    
+
     return valid;
 }
 
@@ -2416,7 +2416,7 @@ lmap_result_valid(struct lmap *lmap, struct result *res)
     for (tab = res->tables; tab; tab = tab->next) {
 	valid &= lmap_table_valid(lmap, tab);
     }
-    
+
     return valid;
 }
 
@@ -2474,12 +2474,12 @@ lmap_result_set_event_epoch(struct result *res, const char *value)
 {
     uint32_t u;
     int ret;
-    
+
     ret = set_uint32(&u, value, __FUNCTION__);
     if (ret == 0) {
 	res->event = u;
     }
-    
+
     return ret;
 }
 
@@ -2494,12 +2494,12 @@ lmap_result_set_start_epoch(struct result *res, const char *value)
 {
     uint32_t u;
     int ret;
-    
+
     ret = set_uint32(&u, value, __FUNCTION__);
     if (ret == 0) {
 	res->start = u;
     }
-    
+
     return ret;
 }
 
@@ -2534,7 +2534,7 @@ lmap_result_set_status(struct result *res, const char *value)
 {
     int32_t i;
     int ret;
-    
+
     ret = set_int32(&i, value, __FUNCTION__);
     if (ret == 0) {
 	res->status = i;

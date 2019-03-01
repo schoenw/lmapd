@@ -46,7 +46,7 @@ lmapd_pid_read(struct lmapd *lmapd)
 
     snprintf(pidfile, sizeof(pidfile),
 	     "%s/%s", lmapd->run_path, LMAPD_PID_FILE);
-    
+
     if ((f = fopen(pidfile, "r")) == NULL) {
 	return 0;
     }
@@ -55,7 +55,7 @@ lmapd_pid_read(struct lmapd *lmapd)
 	fclose(f);
 	return 0;
     }
-    
+
     fclose(f);
     return pid;
 }
@@ -105,7 +105,7 @@ lmapd_pid_write(struct lmapd *lmapd)
 
     snprintf(pidfile, sizeof(pidfile),
 	     "%s/%s", lmapd->run_path, LMAPD_PID_FILE);
-    
+
     if ((f = fopen(pidfile, "w+")) == NULL) {
 	lmap_err("failed to create pid file '%s'", pidfile);
 	return -1;
@@ -117,7 +117,7 @@ lmapd_pid_write(struct lmapd *lmapd)
 	fclose(f);
 	return -1;
     }
-    
+
     fflush(f);
     fclose(f);
     return 0;
