@@ -1083,7 +1083,7 @@ lmapd_run(struct lmapd *lmapd)
     return (ret == 0) ? 0 : -1;
 }
 
-void
+static void
 lmapd_killall(struct lmapd *lmapd)
 {
     struct schedule *sched;
