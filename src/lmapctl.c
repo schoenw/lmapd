@@ -78,7 +78,7 @@ static struct lmapd *lmapd = NULL;
 static int format = LMAP_FORMAT_XML;
 
 static void
-atexit_cb()
+atexit_cb(void)
 {
     if (lmapd) {
 	lmapd_free(lmapd);

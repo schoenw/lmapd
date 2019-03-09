@@ -36,7 +36,7 @@
 static struct lmapd *lmapd = NULL;
 
 static void
-atexit_cb()
+atexit_cb(void)
 {
     if (lmapd_pid_check(lmapd)) {
 	lmapd_pid_remove(lmapd);
@@ -73,7 +73,7 @@ usage(FILE *f)
  */
 
 static void
-daemonize()
+daemonize(void)
 {
     int fd;
     pid_t pid;

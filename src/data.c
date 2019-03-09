@@ -411,7 +411,7 @@ lmap_find_schedule(struct lmap *lmap, const char *name)
  */
 
 struct lmap*
-lmap_new()
+lmap_new(void)
 {
     struct lmap *lmap;
 
@@ -622,7 +622,7 @@ lmap_add_result(struct lmap *lmap, struct result *res)
  */
 
 struct agent*
-lmap_agent_new()
+lmap_agent_new(void)
 {
     struct agent *agent;
 
@@ -774,7 +774,7 @@ lmap_agent_set_report_date(struct agent *agent, const char *value)
  */
 
 struct capability*
-lmap_capability_new()
+lmap_capability_new(void)
 {
     struct capability *capability;
 
@@ -866,7 +866,7 @@ lmap_capability_add_system_tags(struct capability *capability)
  */
 
 struct registry *
-lmap_registry_new()
+lmap_registry_new(void)
 {
     struct registry *registry;
 
@@ -917,7 +917,7 @@ lmap_registry_add_role(struct registry *registry, const char *value)
  */
 
 struct option *
-lmap_option_new()
+lmap_option_new(void)
 {
     struct option *option;
 
@@ -974,7 +974,7 @@ lmap_option_set_value(struct option *option, const char *value)
  */
 
 struct tag *
-lmap_tag_new()
+lmap_tag_new(void)
 {
     struct tag *tag;
 
@@ -1017,7 +1017,7 @@ lmap_tag_set_tag(struct tag *tag, const char *value)
  */
 
 struct supp *
-lmap_supp_new()
+lmap_supp_new(void)
 {
     struct supp *supp;
 
@@ -1125,7 +1125,7 @@ lmap_supp_set_state(struct supp *supp, const char *value)
  */
 
 struct event *
-lmap_event_new()
+lmap_event_new(void)
 {
     struct event *event;
 
@@ -1577,7 +1577,7 @@ lmap_event_calendar_match(struct event *event, time_t *now)
  */
 
 struct task *
-lmap_task_new()
+lmap_task_new(void)
 {
     struct task *task;
 
@@ -1687,7 +1687,7 @@ lmap_task_add_tag(struct task *task, const char *value)
  */
 
 struct schedule *
-lmap_schedule_new()
+lmap_schedule_new(void)
 {
     struct schedule *schedule;
 
@@ -1930,7 +1930,7 @@ lmap_schedule_set_workspace(struct schedule *schedule, const char *value)
  */
 
 struct action *
-lmap_action_new()
+lmap_action_new(void)
 {
     struct action *action;
 
@@ -2134,7 +2134,7 @@ lmap_action_set_workspace(struct action *action, const char *value)
  */
 
 struct lmapd *
-lmapd_new()
+lmapd_new(void)
 {
     struct lmapd *lmapd;
 
@@ -2209,7 +2209,7 @@ lmapd_set_run_path(struct lmapd *lmapd, const char *value)
  */
 
 struct value *
-lmap_value_new()
+lmap_value_new(void)
 {
     struct value *val;
 
@@ -2252,7 +2252,7 @@ lmap_value_set_value(struct value *val, const char *value)
  */
 
 struct row *
-lmap_row_new()
+lmap_row_new(void)
 {
     struct row *row;
 
@@ -2314,7 +2314,7 @@ lmap_row_add_value(struct row *row, struct value *val)
  */
 
 struct table *
-lmap_table_new()
+lmap_table_new(void)
 {
     struct table *tab;
 
@@ -2368,7 +2368,7 @@ lmap_table_add_row(struct table *tab, struct row *row)
  */
 
 struct result *
-lmap_result_new()
+lmap_result_new(void)
 {
     struct result *res;
 
