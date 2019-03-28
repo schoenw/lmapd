@@ -43,7 +43,12 @@ static const char delimiter = ';';
  * @brief Create a safe filesystem name
  *
  * Creates a safe filesystem name. Unsafe characters are %-encoded if
- * necessary.
+ * necessary.  It ensures the filename does not start with [._] to
+ * avoid creating hidden files, and to give lmapd a private namespace
+ * to work with (anything starting with "_").
+ *
+ * Note: as a side-effect, does not allow filenames to start with a
+ * few other characters, either, and will %-escape them instead.
  *
  * @param name file system name
  * @return pointer to a safe filesystem name (static buffer)
@@ -58,7 +63,7 @@ mksafe(const char *name)
     static char save_name[NAME_MAX];
     
     for (i = 0, j = 0; name[i] && j < NAME_MAX-1; i++) {
-	if (isalnum(name[i]) || strchr(safe, name[i])) {
+	if (isalnum(name[i]) || (i > 0 && strchr(safe, name[i]))) {
 	    save_name[j++] = name[i];
 	} else {
 	    /* %-escape the char if there is enough space left */
