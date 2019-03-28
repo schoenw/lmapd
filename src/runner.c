@@ -528,7 +528,7 @@ void
 lmapd_cleanup(struct lmapd *lmapd)
 {
     pid_t pid;
-    int status, failed;
+    int status, failed, succeeded;
     struct lmap *lmap;
     struct timeval t;
     struct action *action;
@@ -619,7 +619,9 @@ lmapd_cleanup(struct lmapd *lmapd)
 
 	/*
 	 * Change schedule state back to enabled if all actions have
-	 * left the running state.
+	 * left the running state.  If at least one action was executed
+	 * and every action returned success, clean up the schedule
+	 * input processing queue.
 	 */
 
 	if (schedule->state == LMAP_SCHEDULE_STATE_RUNNING) {
@@ -627,17 +629,24 @@ lmapd_cleanup(struct lmapd *lmapd)
 	    if (schedule->cnt_active_suppressions) {
 		schedule->state = LMAP_SCHEDULE_STATE_SUPPRESSED;
 	    }
-	    failed = 0;
+	    succeeded = failed = 0;
 	    for (action = schedule->actions; action; action = action->next) {
 		if (action->state == LMAP_ACTION_STATE_RUNNING) {
 		    schedule->state = LMAP_SCHEDULE_STATE_RUNNING;
 		}
 		if (action->last_status) {
-		    failed++;
+		    failed = 1;
+		} else {
+		    succeeded = 1;
 		}
 	    }
-	    if (schedule->state != LMAP_SCHEDULE_STATE_RUNNING && failed) {
-		schedule->cnt_failures++;
+	    if (schedule->state != LMAP_SCHEDULE_STATE_RUNNING) {
+		if (failed) {
+		    schedule->cnt_failures++;
+		} else if (succeeded) {
+		    /* there was at least one action, and none failed */
+		    lmapd_workspace_schedule_clean(lmapd, schedule);
+		}
 	    }
 	}
     }
@@ -694,7 +703,8 @@ execute_cb(struct lmapd *lmapd, struct event *event)
 		event_base_gettimeofday_cached(lmapd->base, &t);
 		sched->cycle_number = (t.tv_sec / event->cycle_interval) * event->cycle_interval;
 	    }
-	    
+
+	    lmapd_workspace_schedule_move(lmapd, sched);
 	    schedule_exec(lmapd, sched);
 	    if (event->type == LMAP_EVENT_TYPE_ONE_OFF
 		|| event->type == LMAP_EVENT_TYPE_IMMEDIATE
