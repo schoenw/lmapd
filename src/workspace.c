@@ -37,6 +37,8 @@
 #include "csv.h"
 #include "workspace.h"
 
+#define LMAPD_QUEUE_INCOMING_NAME "_incoming"
+
 static const char delimiter = ';';
 
 /**
@@ -280,7 +282,8 @@ lmapd_workspace_action_clean(struct lmapd *lmapd, struct action *action)
  * @brief Move the workspace of an action
  *
  * Function to move the workspace of an action to a destination
- * schedule.
+ * schedule.  The action output files are moved to the destination
+ * schedule's incoming special folder.
  *
  * @param lmapd pointer to the struct lmapd
  * @param schedule pointer to the struct schedule
@@ -320,7 +323,7 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
 	}
 	snprintf(oldfilepath, sizeof(oldfilepath), "%s/%s",
 		 action->workspace, dp->d_name);
-	snprintf(newfilepath, sizeof(newfilepath), "%s/%s",
+	snprintf(newfilepath, sizeof(newfilepath), "%s/" LMAPD_QUEUE_INCOMING_NAME "/%s",
 		 destination->workspace, dp->d_name);
 	if (link(oldfilepath, newfilepath) < 0) {
 	    lmap_err("failed to move '%s' to '%s'", oldfilepath, newfilepath);
@@ -337,7 +340,7 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
  *
  * Function to create the workspace folders for schedules and their
  * actions. Actions store results before in their workspace sending
- * them to the destination schedule.
+ * them to the destination schedule's incoming special folder.
  *
  * @param lmapd pointer to struct lmapd
  * @return 0 on success, -1 on error
@@ -381,6 +384,14 @@ lmapd_workspace_init(struct lmapd *lmapd)
 		continue;
 	    }
 	    lmap_action_set_workspace(act, filepath);
+	}
+
+	/* create incoming directory */
+	snprintf(filepath, sizeof(filepath), "%s/" LMAPD_QUEUE_INCOMING_NAME,
+		sched->workspace);
+	if (mkdir(filepath, 0700) < 0 && errno != EEXIST) {
+	    lmap_err("failed to mkdir '%s'", filepath);
+	    ret = -1;
 	}
     }
 
