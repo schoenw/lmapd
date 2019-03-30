@@ -260,7 +260,7 @@ action_exec(struct lmapd *lmapd, struct schedule *schedule, struct action *actio
 	action->last_invocation = t.tv_sec;
 	action->state = LMAP_ACTION_STATE_RUNNING;
 	action->cnt_invocations++;
-	return 0;
+	return 1;
     }
 
     /*
@@ -319,6 +319,7 @@ schedule_exec(struct lmapd *lmapd, struct schedule *schedule)
 {
     struct timeval t;
     struct action *act;
+    int rc;
 
     assert(lmapd);
 
@@ -334,18 +335,24 @@ schedule_exec(struct lmapd *lmapd, struct schedule *schedule)
     case LMAP_SCHEDULE_EXEC_MODE_SEQUENTIAL:
 	schedule->last_invocation = t.tv_sec;
 	schedule->cnt_invocations++;
-	schedule->state = LMAP_SCHEDULE_STATE_RUNNING;
-	act = schedule->actions;
-	if (act) {
-	    (void) action_exec(lmapd, schedule, act);
+	if (schedule->actions) {
+	    act = schedule->actions;
+	    rc = action_exec(lmapd, schedule, act);
+	    if (rc == 1) {
+		schedule->state = LMAP_SCHEDULE_STATE_RUNNING;
+	    }
 	}
 	break;
     case LMAP_SCHEDULE_EXEC_MODE_PARALLEL:
 	schedule->last_invocation = t.tv_sec;
 	schedule->cnt_invocations++;
-	schedule->state = LMAP_SCHEDULE_STATE_RUNNING;
-	for (act = schedule->actions; act; act = act->next) {
-	    (void) action_exec(lmapd, schedule, act);
+	if (schedule->actions) {
+	    for (act = schedule->actions; act; act = act->next) {
+		rc = action_exec(lmapd, schedule, act);
+		if (rc == 1) {
+		    schedule->state = LMAP_SCHEDULE_STATE_RUNNING;
+		}
+	    }
 	}
 	break;
     case LMAP_SCHEDULE_EXEC_MODE_PIPELINED:
