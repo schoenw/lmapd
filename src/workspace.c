@@ -450,6 +450,12 @@ lmapd_workspace_action_clean(struct lmapd *lmapd, struct action *action)
  * schedule.  The action output files are moved to the destination
  * schedule's incoming special folder.
  *
+ * Should the destination schedule be the action's own schedule,
+ * move its output files to its own schedule's *active* (processing)
+ * incoming queue instead, where it will be immediately available
+ * for consumption (e.g. by the next action in a sequential execution
+ * mode).
+ *
  * @param lmapd pointer to the struct lmapd
  * @param schedule pointer to the struct schedule
  * @param action pointer to the struct action
@@ -464,6 +470,7 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
     int ret = 0;
     char oldfilepath[PATH_MAX];
     char newfilepath[PATH_MAX];
+    const char *newfileformat;
     struct dirent *dp;
     DIR *dfd;
 
@@ -474,6 +481,13 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
 	|| !action || !action->workspace || !action->name
 	|| !destination || !destination->workspace) {
 	return 0;
+    }
+
+    if (destination != schedule) {
+	newfileformat = "%s/" LMAPD_QUEUE_INCOMING_NAME "/%s";
+    } else {
+	/* Special case an action moving to its own schedule */
+	newfileformat = "%s/%s";
     }
 
     dfd = opendir(action->workspace);
@@ -488,8 +502,8 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
 	}
 	snprintf(oldfilepath, sizeof(oldfilepath), "%s/%s",
 		 action->workspace, dp->d_name);
-	snprintf(newfilepath, sizeof(newfilepath), "%s/" LMAPD_QUEUE_INCOMING_NAME "/%s",
-		 destination->workspace, dp->d_name);
+	snprintf(newfilepath, sizeof(newfilepath), newfileformat,
+		     destination->workspace, dp->d_name);
 	if (link(oldfilepath, newfilepath) < 0) {
 	    lmap_err("failed to move '%s' to '%s'", oldfilepath, newfilepath);
 	    ret = -1;
