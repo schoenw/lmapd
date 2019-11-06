@@ -2479,7 +2479,7 @@ render_result(struct result *res, xmlNodePtr root, xmlNsPtr ns)
     }
     
     if (res->event) {
-	render_leaf_datetime(node, ns, "event", &res->start);
+	render_leaf_datetime(node, ns, "event", &res->event);
     }
     
     if (res->start) {
