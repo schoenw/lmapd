@@ -608,6 +608,8 @@ START_TEST(test_parser_config_agent)
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
 
+    ck_assert_str_eq(last_error_msg, "");
+
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
 }
@@ -662,6 +664,8 @@ START_TEST(test_parser_config_suppressions)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -743,6 +747,8 @@ START_TEST(test_parser_config_tasks)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -855,6 +861,8 @@ START_TEST(test_parser_config_events)
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
 
+    ck_assert_str_eq(last_error_msg, "");
+
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
 }
@@ -944,6 +952,8 @@ START_TEST(test_parser_config_events_calendar0)
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
 
+    ck_assert_str_eq(last_error_msg, "");
+
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
 }
@@ -1032,6 +1042,8 @@ START_TEST(test_parser_config_events_calendar1)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1128,6 +1140,8 @@ START_TEST(test_parser_config_events_calendar2)
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
 
+    ck_assert_str_eq(last_error_msg, "");
+
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
 }
@@ -1212,6 +1226,8 @@ START_TEST(test_parser_config_events_calendar3)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1309,6 +1325,8 @@ START_TEST(test_parser_config_schedules)
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
 
+    ck_assert_str_eq(last_error_msg, "");
+
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
 }
@@ -1397,6 +1415,8 @@ START_TEST(test_parser_config_actions)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1492,6 +1512,8 @@ START_TEST(test_parser_config_merge)
     ck_assert_str_eq(d, e);
     ck_assert_str_eq(e, x);
 
+    ck_assert_str_eq(last_error_msg, "");
+
     lmap_free(lmapa); lmap_free(lmapb);
     free(d); free(e);
 }
@@ -1506,7 +1528,6 @@ START_TEST(test_parser_state_agent)
         "    <lmapc:agent>"
 	"      <lmapc:agent-id>550e8400-e29b-41d4-a716-446655440000</lmapc:agent-id>"
 	"      <lmapc:agent-id>550e8400-e29b-41d4-a716-446655440000</lmapc:agent-id>"
-	"      <lmapc:version>lmap version 0.3</lmapc:version>"
 	"      <lmapc:last-started>2016-02-21T22:13:40+01:00</lmapc:last-started>"
         "    </lmapc:agent>"
         "  </lmapc:lmap>"
@@ -1538,6 +1559,8 @@ START_TEST(test_parser_state_agent)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1588,6 +1611,8 @@ START_TEST(test_parser_state_capabilities)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1643,6 +1668,8 @@ START_TEST(test_parser_state_capability_tasks)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1704,6 +1731,8 @@ START_TEST(test_parser_state_schedules)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1807,6 +1836,8 @@ START_TEST(test_parser_state_actions)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, x);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
@@ -1995,6 +2026,8 @@ START_TEST(test_parser_report)
 
     ck_assert_str_eq(b, c);
     ck_assert_str_eq(c, a);
+
+    ck_assert_str_eq(last_error_msg, "");
 
     lmap_free(lmapa); lmap_free(lmapb);
     free(b); free(c);
