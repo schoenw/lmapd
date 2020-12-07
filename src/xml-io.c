@@ -2054,16 +2054,16 @@ render_action(struct action *action, xmlNodePtr root, xmlNsPtr ns, int what)
     if (what & RENDER_CONFIG_FALSE) {
 	char *state = NULL;
 	switch (action->state) {
-	case LMAP_SCHEDULE_STATE_ENABLED:
+	case LMAP_ACTION_STATE_ENABLED:
 	    state = "enabled";
 	    break;
-	case LMAP_SCHEDULE_STATE_DISABLED:
+	case LMAP_ACTION_STATE_DISABLED:
 	    state = "disabled";
 	    break;
-	case LMAP_SCHEDULE_STATE_RUNNING:
+	case LMAP_ACTION_STATE_RUNNING:
 	    state = "running";
 	    break;
-	case LMAP_SCHEDULE_STATE_SUPPRESSED:
+	case LMAP_ACTION_STATE_SUPPRESSED:
 	    state = "suppressed";
 	    break;
 	}
