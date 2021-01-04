@@ -43,11 +43,15 @@ static void
 event_gaga(struct event *event, struct event **ev,
 	   short what, event_callback_fn func, struct timeval *tv)
 {
-    assert(event && event->lmapd && ev && *ev == NULL);
+    assert(event && event->lmapd && ev);
 
-    *ev = event_new(event->lmapd->base, -1, what, func, event);
-    if (!*ev || event_add(*ev, tv) < 0)  {
-	lmap_err("failed to create/add event for '%s'", event->name);
+    if (!(*ev)) {
+	*ev = event_new(event->lmapd->base, -1, what, func, event);
+	if (!*ev || event_add(*ev, tv) < 0)  {
+	    lmap_err("failed to create/add event for '%s'", event->name);
+	}
+    } else {
+	lmap_err("failed to create/add event for '%s': event already pending, maybe due to too large a random spread?", event->name);
     }
 }
 #endif
