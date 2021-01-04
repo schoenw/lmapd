@@ -1162,13 +1162,21 @@ lmap_event_valid(struct lmap *lmap, struct event *event)
 	valid = 0;
     }
 
-    if (event->type == LMAP_EVENT_TYPE_PERIODIC
-	&& ! (event->flags & LMAP_EVENT_FLAG_INTERVAL_SET)) {
-	lmap_err("event %s%s%srequires an interval",
-		 event->name ? "'" : "",
-		 event->name ? event->name : "",
-		 event->name ? "' " : "");
-	valid = 0;
+    if (event->type == LMAP_EVENT_TYPE_PERIODIC) {
+	if (!(event->flags & LMAP_EVENT_FLAG_INTERVAL_SET)) {
+	    lmap_err("event %s%s%srequires an interval",
+		     event->name ? "'" : "",
+		     event->name ? event->name : "",
+		     event->name ? "' " : "");
+	    valid = 0;
+	} else if (event->flags & LMAP_EVENT_FLAG_RANDOM_SPREAD_SET
+	    && event->random_spread >= event->interval) {
+	    lmap_err("event %s%s%shas a random spread too large for its interval",
+		     event->name ? "'" : "",
+		     event->name ? event->name : "",
+		     event->name ? "' " : "");
+	    valid = 0;
+	}
     }
     if (event->type == LMAP_EVENT_TYPE_CALENDAR) {
 	if (event->months == 0) {
