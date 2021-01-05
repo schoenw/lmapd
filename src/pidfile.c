@@ -90,7 +90,7 @@ lmapd_pid_check(struct lmapd *lmapd)
  * @brief Writes current pid into the pidfile
  *
  * Function to write the current process identifier (pid) into a
- * pidfile. File is locked using flock
+ * pidfile.
  *
  * @param lmapd pointer to struct lmapd
  * @return 0 on success, -1 on erorr
