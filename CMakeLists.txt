@@ -6,8 +6,6 @@ project(lmapd VERSION 0.4.0 LANGUAGES C)
 option(BUILD_SHARED_LIBS "Build the shared library" OFF)
 option(BUILD_TESTS "Build test programs" ON)
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
-
 # experimental code coverage stuff...
 #set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")
 #set(CMAKE_C_FLAGS "-g -O0 -Wall -W -fprofile-arcs -ftest-coverage")

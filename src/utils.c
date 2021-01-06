@@ -53,7 +53,7 @@ void lmap_set_log_handler(lmap_log_handler handler)
 void lmap_vlog_default(int level, const char *func, const char *format, va_list args)
 {
     char *level_name = NULL;
-    
+
     if (isatty(STDERR_FILENO)) {
 	fprintf(stderr, "lmapd[%d]: ", getpid());
 	switch (level) {
@@ -96,7 +96,7 @@ void lmap_vlog_default(int level, const char *func, const char *format, va_list 
 void lmap_log(int level, const char *func, const char *format, ...)
 {
     va_list args;
-    
+
     va_start(args, format);
     lmap_vlog(level, func, format, args);
     va_end(args);

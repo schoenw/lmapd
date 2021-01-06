@@ -38,7 +38,7 @@ static void
 render_leaf(json_object *jobj, char *name, char *content)
 {
     assert(jobj);
-    
+
     if (name && content) {
 	json_object_object_add(jobj, name, json_object_new_string(content));
     }
@@ -55,7 +55,7 @@ render_leaf_datetime(json_object *jobj, char *name, time_t *tp)
 {
     char buf[32];
     struct tm *tmp;
-    
+
     tmp = localtime(tp);
     strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S%z", tmp);
 
@@ -63,22 +63,22 @@ render_leaf_datetime(json_object *jobj, char *name, time_t *tp)
      * Hack to insert the ':' in the timezone offset since strftime()
      * implementations do not generate this separator.
      */
-    
+
     if (strlen(buf) == 24) {
 	buf[25] = buf[24];
 	buf[24] = buf[23];
 	buf[23] = buf[22];
 	buf[22] = ':';
     }
-    
-    render_leaf(jobj, name, buf); 
+
+    render_leaf(jobj, name, buf);
 }
 
 static void
 render_option(struct option *option, json_object *jobj)
 {
     json_object *robj;
-    
+
     if (! option) {
 	return;
     }
@@ -169,13 +169,13 @@ render_result(struct result *res, json_object *jobj)
     struct option *option;
     struct tag *tag;
     struct table *tab;
-    
+
     robj = json_object_new_object();
     if (! robj) {
 	return;
     }
     json_object_array_add(jobj, robj);
-    
+
     render_leaf(robj, "schedule", res->schedule);
     render_leaf(robj, "action", res->action);
     render_leaf(robj, "task", res->task);
@@ -193,15 +193,15 @@ render_result(struct result *res, json_object *jobj)
 	    json_object_array_add(aobj, json_object_new_string(tag->tag));
 	}
     }
-    
+
     if (res->event) {
 	render_leaf_datetime(robj, "event", &res->start);
     }
-    
+
     if (res->start) {
 	render_leaf_datetime(robj, "start", &res->start);
     }
-    
+
     if (res->end) {
 	render_leaf_datetime(robj, "end", &res->end);
     }
@@ -237,21 +237,33 @@ render_result(struct result *res, json_object *jobj)
 char *
 lmap_json_render_report(struct lmap *lmap)
 {
-    const char *report = NULL;
+    char *report = NULL;
     json_object *jobj, *aobj, *robj;
     struct result *res;
+    const char *r1;
 
     assert(lmap);
 
-    jobj = json_object_new_object();
-    robj = json_object_new_object();
+    if (!(jobj = json_object_new_object()))
+	return NULL;
+    if (!(robj = json_object_new_object()))
+	goto err_exit;
+
     json_object_object_add(jobj, LMAPR_JSON_NAMESPACE ":" "report", robj);
     render_agent_report(lmap->agent, robj);
-    aobj = json_object_new_array();
+
+    if (!(aobj = json_object_new_array()))
+	goto err_exit;
     json_object_object_add(robj, "result", aobj);
     for (res = lmap->results; res; res = res->next) {
 	render_result(res, aobj);
     }
-    report = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
-    return report ? strdup(report) : NULL;
+
+    r1 = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY);
+    if (r1)
+	report = strdup(r1);
+
+err_exit:
+    json_object_put(jobj);
+    return report;
 }

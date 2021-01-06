@@ -39,12 +39,12 @@ static void vlog(int level, const char *func, const char *format, va_list args)
 
 void setup(void)
 {
-  
+
 }
 
 void teardown(void)
 {
-  
+
 }
 
 START_TEST(test_lmap_agent)
@@ -149,7 +149,7 @@ START_TEST(test_lmap_suppression)
     int c;
     struct tag *tag;
     struct supp *supp;
-    
+
     supp = lmap_supp_new();
     ck_assert_int_eq(lmap_supp_valid(NULL, supp), 0);
     ck_assert_str_eq(last_error_msg, "suppression requires a name");
@@ -189,7 +189,7 @@ START_TEST(test_lmap_event)
 {
     const char *date1 = "2016-03-14T07:45:19+01:00";
     const char *date2 = "2016-03-14T07:45:22+01:00";
-    
+
     struct event *event = lmap_event_new();
     ck_assert_int_eq(lmap_event_valid(NULL, event), 0);
     ck_assert_str_eq(last_error_msg, "event requires a type");
@@ -216,7 +216,7 @@ START_TEST(test_lmap_event)
     ck_assert_int_eq(lmap_event_set_end(event, date1), 0);
     ck_assert_int_eq(lmap_event_valid(NULL, event), 0);
     ck_assert_str_eq(last_error_msg, "event 'bang' ends before it starts");
-    
+
     lmap_event_free(event);
 }
 END_TEST
@@ -285,7 +285,7 @@ START_TEST(test_lmap_event_calendar)
     ck_assert_int_eq(lmap_event_add_day_of_week(event, "foo"), -1);
     ck_assert_str_eq(last_error_msg, "illegal day of week value 'foo'");
     ck_assert_int_eq(event->days_of_week, 5);
-    
+
     ck_assert_int_eq(lmap_event_valid(NULL, event), 0);
     ck_assert_str_eq(last_error_msg, "event 'calendar' requires a day of month");
     ck_assert_int_eq(lmap_event_add_day_of_month(event, "1"), 0);
@@ -297,7 +297,7 @@ START_TEST(test_lmap_event_calendar)
     ck_assert_int_eq(lmap_event_add_day_of_month(event, "0"), -1);
     ck_assert_str_eq(last_error_msg, "illegal day of month value '0'");
     ck_assert_int_eq(event->days_of_month, 6);
-    
+
     ck_assert_int_eq(lmap_event_valid(NULL, event), 0);
     ck_assert_str_eq(last_error_msg, "event 'calendar' requires a month");
     ck_assert_int_eq(lmap_event_add_month(event, "february"), 0);
@@ -305,7 +305,7 @@ START_TEST(test_lmap_event_calendar)
     ck_assert_int_eq(lmap_event_add_month(event, "foo"), -1);
     ck_assert_str_eq(last_error_msg, "illegal month value 'foo'");
     ck_assert_int_eq(event->months, 6);
-    
+
     ck_assert_int_eq(lmap_event_valid(NULL, event), 1);
     ck_assert_int_eq(lmap_event_set_timezone_offset(event, "+01:11"), 0);
     ck_assert_int_eq(event->timezone_offset, 1*60+11);
@@ -347,7 +347,7 @@ START_TEST(test_lmap_task)
     struct task *task;
     struct registry *registry;
     struct option *option;
-    
+
     task = lmap_task_new();
     ck_assert_int_eq(lmap_task_valid(NULL, task), 0);
     ck_assert_str_eq(last_error_msg, "task requires a program");
@@ -386,7 +386,7 @@ START_TEST(test_lmap_schedule)
     int c;
     struct tag *tag;
     struct schedule *schedule;
-    
+
     schedule = lmap_schedule_new();
     ck_assert_int_eq(lmap_schedule_valid(NULL, schedule), 0);
     ck_assert_str_eq(last_error_msg, "schedule requires a start event");
@@ -435,7 +435,7 @@ START_TEST(test_lmap_action)
     int c;
     struct tag *tag;
     struct action *action;
-    
+
     action = lmap_action_new();
     ck_assert_int_eq(lmap_action_valid(NULL, action), 0);
     ck_assert_str_eq(last_error_msg, "action requires a task");
@@ -472,7 +472,7 @@ START_TEST(test_lmap_lmap)
     lmap = lmap_new();
     ck_assert_ptr_ne(lmap, NULL);
     ck_assert_int_eq(lmap_valid(lmap), 1);
-        
+
     supp_a = lmap_supp_new();
     supp_b = lmap_supp_new();
     ck_assert_int_eq(lmap_supp_set_name(supp_a, "abcde"), 0);
@@ -515,7 +515,7 @@ START_TEST(test_lmap_row)
     int i;
     char *vals[] = { "foo", "bar", " b a z ", NULL };
     struct value *val;
-    
+
     struct row *row = lmap_row_new();
     for (i = 0; vals[i]; i++) {
 	val = lmap_value_new();
@@ -534,7 +534,7 @@ START_TEST(test_lmap_table)
 {
     struct row *row;
     struct value *val;
-    
+
     struct table *tab = lmap_table_new();
     row = lmap_row_new();
     val = lmap_value_new();
@@ -549,7 +549,7 @@ END_TEST
 START_TEST(test_lmap_result)
 {
     struct result *res;
-    
+
     res = lmap_result_new();
     ck_assert_ptr_ne(res, NULL);
     lmap_result_set_schedule(res, "schedule");
@@ -592,7 +592,7 @@ START_TEST(test_parser_config_agent)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -649,7 +649,7 @@ START_TEST(test_parser_config_suppressions)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -732,7 +732,7 @@ START_TEST(test_parser_config_tasks)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -845,7 +845,7 @@ START_TEST(test_parser_config_events)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -936,7 +936,7 @@ START_TEST(test_parser_config_events_calendar0)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1027,7 +1027,7 @@ START_TEST(test_parser_config_events_calendar1)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1124,7 +1124,7 @@ START_TEST(test_parser_config_events_calendar2)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1211,7 +1211,7 @@ START_TEST(test_parser_config_events_calendar3)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1309,7 +1309,7 @@ START_TEST(test_parser_config_schedules)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1400,7 +1400,7 @@ START_TEST(test_parser_config_actions)
         "</config>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1494,7 +1494,7 @@ START_TEST(test_parser_config_merge)
         "</config>\n";
     char *d, *e;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_config_string(lmapa, a), 0);
@@ -1544,7 +1544,7 @@ START_TEST(test_parser_state_agent)
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
@@ -1596,7 +1596,7 @@ START_TEST(test_parser_state_capabilities)
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
@@ -1653,7 +1653,7 @@ START_TEST(test_parser_state_capability_tasks)
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
@@ -1716,7 +1716,7 @@ START_TEST(test_parser_state_schedules)
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
@@ -1821,7 +1821,7 @@ START_TEST(test_parser_state_actions)
         "</data>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_state_string(lmapa, a), 0);
@@ -2011,7 +2011,7 @@ START_TEST(test_parser_report)
 	"</rpc>\n";
     char *b, *c;
     struct lmap *lmapa = NULL, *lmapb = NULL;
-    
+
     lmapa = lmap_new();
     ck_assert_ptr_ne(lmapa, NULL);
     ck_assert_int_eq(lmap_xml_parse_report_string(lmapa, a), 0);

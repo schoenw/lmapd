@@ -36,12 +36,12 @@
 static struct lmapd *lmapd = NULL;
 
 static void
-atexit_cb()
+atexit_cb(void)
 {
     if (lmapd_pid_check(lmapd)) {
 	lmapd_pid_remove(lmapd);
     }
-    
+
     if (lmapd) {
 	lmapd_free(lmapd);
     }
@@ -55,7 +55,7 @@ usage(FILE *f)
 	    "\t-n parse config and dump config and exit\n"
 	    "\t-s parse config and dump state and exit\n"
 	    "\t-z clean the workspace before starting\n"
-	    "\t-q path to queue directory\n" 
+	    "\t-q path to queue directory\n"
 	    "\t-c path to config directory or file\n"
 	    "\t-b path to capability directory or file\n"
 	    "\t-r path to run directory (pid file and status file)\n"
@@ -73,7 +73,7 @@ usage(FILE *f)
  */
 
 static void
-daemonize()
+daemonize(void)
 {
     int fd;
     pid_t pid;
@@ -140,14 +140,14 @@ read_config(struct lmapd *lmapd)
     if (! lmapd->lmap) {
 	return -1;
     }
-    
+
     ret = lmap_xml_parse_config_path(lmapd->lmap, lmapd->config_path);
     if (ret != 0) {
 	lmap_free(lmapd->lmap);
 	lmapd->lmap = NULL;
 	return -1;
     }
-    
+
     if (lmapd->lmap->agent) {
 	lmapd->lmap->agent->last_started = time(NULL);
     }
@@ -182,7 +182,7 @@ main(int argc, char *argv[])
     char *queue_path = NULL;
     char *run_path = NULL;
     pid_t pid;
-    
+
     while ((opt = getopt(argc, argv, "fnszq:c:b:r:vh")) != -1) {
 	switch (opt) {
 	case 'f':
@@ -226,11 +226,11 @@ main(int argc, char *argv[])
     if (! lmapd) {
 	exit(EXIT_FAILURE);
     }
-    
+
     atexit(atexit_cb);
-    
+
     openlog("lmapd", LOG_PID | LOG_NDELAY, LOG_DAEMON);
-    
+
     (void) lmapd_set_config_path(lmapd,
 		config_path ? config_path : LMAPD_CONFIG_DIR);
     if (!lmapd->config_path) {
@@ -238,7 +238,7 @@ main(int argc, char *argv[])
     }
     (void) lmapd_set_capability_path(lmapd,
 		capability_path ? capability_path : LMAPD_CAPABILITY_DIR);
-    
+
     if (noop || state) {
 	if (read_config(lmapd) != 0) {
 	    exit(EXIT_FAILURE);
@@ -290,7 +290,7 @@ main(int argc, char *argv[])
      * same time. Well, perhaps that is even possible after the power
      * outage? I will fix it later when the power is back. ;-)
      */
-    
+
     srand(time(NULL));
 
     pid = lmapd_pid_read(lmapd);
@@ -312,7 +312,7 @@ main(int argc, char *argv[])
 
 	(void) lmapd_workspace_init(lmapd);
 	ret = lmapd_run(lmapd);
-	
+
 	/*
 	 * Sleep one second just in case we get into a failure loop so
 	 * as to avoid getting into a crazy tight loop.

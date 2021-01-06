@@ -99,7 +99,7 @@ lmapd_sighub_cb(evutil_socket_t sig, short events, void *context)
     (void) events;
 
     assert(lmapd);
-    lmapd_restart(lmapd); 
+    lmapd_restart(lmapd);
 }
 
 /**
@@ -145,7 +145,7 @@ lmapd_sigusr1_cb(evutil_socket_t sig, short events, void *context)
     char *xml = NULL;
     char filename[PATH_MAX];
     struct lmapd *lmapd = (struct lmapd *) context;
-    
+
     (void) sig;
     (void) events;
 
@@ -196,7 +196,7 @@ void
 lmapd_sigusr2_cb(evutil_socket_t sig, short events, void *context)
 {
     struct lmapd *lmapd = (struct lmapd *) context;
-    
+
     (void) sig;
     (void) events;
 
