@@ -329,6 +329,12 @@ schedule_exec(struct lmapd *lmapd, struct schedule *schedule)
 
     // lmap_dbg("executing schedule '%s'", schedule->name);
     
+    /* avoid leftover data (possibly due to a crash) from
+     * previous runs of an action. */
+    for (act = schedule->actions; act; act = act->next) {
+	(void) lmapd_workspace_action_clean(lmapd, act);
+    }
+
     event_base_gettimeofday_cached(lmapd->base, &t);
     
     switch (schedule->mode) {
