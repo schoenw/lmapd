@@ -485,6 +485,7 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
     const char *newfileformat;
     struct dirent *dp;
     DIR *dfd;
+    struct stat st;
 
     assert(lmapd);
     (void) lmapd;
@@ -509,7 +510,9 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
     }
 
     while ((dp = readdir(dfd)) != NULL) {
-	if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) {
+	/* we only "move" files, never directories or other inode types */
+	if (fstatat(dirfd(dfd), dp->d_name, &st, AT_SYMLINK_NOFOLLOW)
+		|| !S_ISREG(st.st_mode)) {
 	    continue;
 	}
 	snprintf(oldfilepath, sizeof(oldfilepath), "%s/%s",
