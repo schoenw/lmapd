@@ -305,6 +305,7 @@ lmapd_workspace_schedule_move(struct lmapd *lmapd, struct schedule *schedule)
     char oldfilepath[PATH_MAX];
     struct dirent *dp;
     DIR *dfd;
+    struct stat st;
 
     int dirfd_dest = -1;
     char *sdata = NULL, *s;
@@ -339,8 +340,8 @@ lmapd_workspace_schedule_move(struct lmapd *lmapd, struct schedule *schedule)
 
     sdata = NULL;
     while ((dp = readdir(dfd)) != NULL) {
+	/* skip ., .., hidden files/directories */
 	if (dp->d_name[0] == '.') {
-	    /* skip ., .., hidden files */
 	    continue;
 	}
 	/* is it the .meta file ? */
@@ -356,13 +357,23 @@ lmapd_workspace_schedule_move(struct lmapd *lmapd, struct schedule *schedule)
 	    s++;
 	    strcpy(s, "data"); /* strlen("data") == strlen("meta") */
 
+	    if (fstatat(dirfd(dfd), dp->d_name, &st, AT_SYMLINK_NOFOLLOW)
+		    || !S_ISREG(st.st_mode)) {
+		continue; /* "meta" is not a regular file? skip this pair */
+	    }
 	    /* "meta" *is* there, "data" might not be */
+	    if (fstatat(dirfd(dfd), sdata, &st, AT_SYMLINK_NOFOLLOW)
+		    || !S_ISREG(st.st_mode)) {
+		continue; /* "data" is not a regular file, or not there yet, skip this pair */
+	    }
 	    if (linkat(dirfd(dfd), sdata, dirfd_dest, sdata, 0)) {
-		continue; /* data not there yet, skip this pair */
+		lmap_err("failed to move %s from %s to %s: %s",
+			sdata, oldfilepath, newfilepath, strerror(errno));
+		continue;
 	    }
 	    if (linkat(dirfd(dfd), dp->d_name, dirfd_dest, dp->d_name, 0)) {
 		lmap_err("failed to move %s from %s to %s: %s",
-			sdata, oldfilepath, newfilepath, strerror(errno));
+			dp->d_name, oldfilepath, newfilepath, strerror(errno));
 		/* rollback first linkat() */
 		if (unlinkat(dirfd_dest, sdata, 0))
 		    lmap_err("Could not rollback move of '%s/%s': %s",
