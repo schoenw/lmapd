@@ -27,6 +27,8 @@ extern int lmapd_workspace_update(struct lmapd *lmapd);
 
 extern int lmapd_workspace_action_clean(struct lmapd *lmapd, struct action *action);
 extern int lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule, struct action *action, struct schedule *destination);
+extern int lmapd_workspace_schedule_move(struct lmapd *lmapd, struct schedule *schedule);
+extern int lmapd_workspace_schedule_clean(struct lmapd *lmapd, struct schedule *schedule);
 
 extern int lmapd_workspace_action_open_data(struct schedule *schedule, struct action *action, int flags);
 
