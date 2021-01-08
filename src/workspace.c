@@ -413,6 +413,12 @@ err_exit:
  * Function to clean the workspace of an action by removing everything
  * in the workspace directory.
  *
+ * We preserve files and direct subdirectories (but not files or
+ * directories inside subdirectories) starting with "_", so that actions
+ * can have a private namespace for work that, while not guaranteed to
+ * last across lmapd config updates and restarts, keeps state from one
+ * schedule execution to the next.
+ *
  * @param lmapd pointer to the struct lmapd
  * @param action pointer to the struct action
  * @return 0 on success, -1 on error
@@ -443,6 +449,9 @@ lmapd_workspace_action_clean(struct lmapd *lmapd, struct action *action)
 	if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) {
 	    continue;
 	}
+	if (dp->d_name[0] == '_') {
+	    continue;
+	}
 	snprintf(filepath, sizeof(filepath), "%s/%s",
 		 action->workspace, dp->d_name);
 	if (remove_all(filepath) != 0) {
@@ -461,6 +470,9 @@ lmapd_workspace_action_clean(struct lmapd *lmapd, struct action *action)
  * Function to move the workspace of an action to a destination
  * schedule.  The action output files are moved to the destination
  * schedule's incoming special folder.
+ *
+ * Note: all files in the action workspace are moved, except for
+ * hidden files, or those starting with "_".
  *
  * Should the destination schedule be the action's own schedule,
  * move its output files to its own schedule's *active* (processing)
@@ -515,6 +527,11 @@ lmapd_workspace_action_move(struct lmapd *lmapd, struct schedule *schedule,
 		|| !S_ISREG(st.st_mode)) {
 	    continue;
 	}
+	if (dp->d_name[0] == '_' || dp->d_name[0] == '.') {
+	    continue;
+	}
+	/* we don't need to special case . and .. directories due
+	 * to the above */
 	snprintf(oldfilepath, sizeof(oldfilepath), "%s/%s",
 		 action->workspace, dp->d_name);
 	snprintf(newfilepath, sizeof(newfilepath), newfileformat,
