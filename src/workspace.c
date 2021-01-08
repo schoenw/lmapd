@@ -271,7 +271,7 @@ lmapd_workspace_schedule_clean(struct lmapd *lmapd, struct schedule *schedule)
 	    continue;
 	}
 	if (fstatat(dirfd(dfd), dp->d_name, &st, AT_SYMLINK_NOFOLLOW)
-		|| st.st_mode & S_IFDIR) {
+		|| S_ISDIR(st.st_mode)) {
 	    continue;
 	}
 	if (unlinkat(dirfd(dfd), dp->d_name, 0)) {
